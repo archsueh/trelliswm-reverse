@@ -1,5 +1,7 @@
 # TrellisWM clean-room study
 
+> **非官方声明 / Disclaimer**：本项目是独立的 clean-room 规格研究，与 TrellisWM 及其作者**无关联、未获背书**。`capture/` 中的原品元数据与符号名仅作事实引用，TrellisWM 及相关商标归其权利人所有。完整说明见 [NOTICE.md](NOTICE.md)。
+
 以 `storytold/craft-anything` 的 **Study → Build → Check → Ready** 方法，从 `/Applications/TrellisWM.app` 0.10.0 (build 560) 的**可见证据**逆推规格，并独立写出一套可编译、可单测、可交互的实现。
 
 **结论：READY · 14/14 Check 通过 · Swift 18/18 单测 · JS 24/24 自检。**
