@@ -1,0 +1,107 @@
+{
+  "phase": "Check",
+  "subject": "TrellisWM 0.10.0 (build 560)",
+  "checks": [
+    {
+      "id": "C01",
+      "name": "15 URL commands: evidence == JS spec",
+      "status": "PASS",
+      "detail": "evidence 15 / spec 15"
+    },
+    {
+      "id": "C02",
+      "name": "Swift parser covers every command",
+      "status": "PASS",
+      "detail": "Swift switch cases 15, expected 15"
+    },
+    {
+      "id": "C03",
+      "name": "8 settings panes: evidence == spec == Swift",
+      "status": "PASS",
+      "detail": "evidence 8 / spec 8 / Swift 8"
+    },
+    {
+      "id": "C04",
+      "name": "47 release keys: evidence == spec == Swift",
+      "status": "PASS",
+      "detail": "evidence 47 / spec 47 / Swift 47"
+    },
+    {
+      "id": "C05",
+      "name": "Shortcuts quoted verbatim from guide",
+      "status": "PASS",
+      "detail": "12 rows, spec 12"
+    },
+    {
+      "id": "C06",
+      "name": "Layout grammar covers all observed node kinds",
+      "status": "PASS",
+      "detail": "observed kinds ['desktop', 'panel', 'split']; nesting depth from real templates >= 3"
+    },
+    {
+      "id": "C07",
+      "name": "Document invariants carried into spec",
+      "status": "PASS",
+      "detail": "7 invariants; weights-sum and desktop-leaf rules present"
+    },
+    {
+      "id": "C08",
+      "name": "460ms budget matches measured median / mode",
+      "status": "PASS",
+      "detail": "SETTLED median 460.0 ms, mean 365.9 ms, n=99, nominal 460 ms, modal band 450-479 has 51"
+    },
+    {
+      "id": "C09",
+      "name": "Runtime event vocabulary captured",
+      "status": "PASS",
+      "detail": "23 tags across 1468 log lines"
+    },
+    {
+      "id": "C10",
+      "name": "No subject artwork / resources in implementation",
+      "status": "PASS",
+      "detail": "clean"
+    },
+    {
+      "id": "C11",
+      "name": "Craft Anything project skeleton complete",
+      "status": "PASS",
+      "detail": "17 artifacts present"
+    },
+    {
+      "id": "C12",
+      "name": "XCTest suite exercises core invariants",
+      "status": "PASS",
+      "detail": "18 test methods"
+    },
+    {
+      "id": "C13",
+      "name": "swift test --disable-sandbox",
+      "status": "PASS",
+      "detail": "18 tests, 0 failures",
+      "test_count": 18
+    },
+    {
+      "id": "C14",
+      "name": "Simulator boots and self-tests in a real browser",
+      "status": "PASS",
+      "detail": "selftest PASS 24/24, 6 window nodes rendered"
+    }
+  ],
+  "summary": {
+    "total": 14,
+    "passed": 14,
+    "failed": 0,
+    "warned": 0
+  },
+  "verdict": "READY",
+  "coverage": {
+    "url_commands": "15/15",
+    "settings_panes": "8/8",
+    "release_defaults": "47/47",
+    "shortcut_rows": "12/12",
+    "layout_grammar": "3/3 node kinds + 7 invariants",
+    "known_ambiguities": "Q13 dock heuristic (inference), Q16 framed:desktop (irreducible from current samples), Q14 seat hashing (unknown)",
+    "unspecified": "gesture thresholds, easing curve, seat hashing, picture eviction, licensing"
+  }
+}

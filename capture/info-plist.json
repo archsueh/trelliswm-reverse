@@ -1,0 +1,18 @@
+{
+  "CFBundleExecutable": "TrellisWM",
+  "CFBundleIdentifier": "app.trellisui.trelliswm",
+  "CFBundleShortVersionString": "0.10.0",
+  "CFBundleURLTypes": [
+    {
+      "CFBundleURLName": "TrellisWM commands",
+      "CFBundleURLSchemes": [
+        "trelliswm"
+      ]
+    }
+  ],
+  "CFBundleVersion": "560",
+  "LSMinimumSystemVersion": "14.0",
+  "LSUIElement": true,
+  "NSHumanReadableCopyright": "© 2026 Dan Fessler",
+  "SUFeedURL": "https://trelliswm.app/appcast.xml"
+}

@@ -1,0 +1,1028 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TrellisCore · 分形窗口模型交互模拟器</title>
+<style>
+:root{
+  --paper:#F7F6F2; --panel:#FFFEFB; --ink:#22201D; --muted:#6E6860;
+  --rule:#DCD8CF; --hair:#EAE6DD; --accent:#A6342B; --blue:#2F5D8C;
+  --green:#3E6B4C; --gold:#8A6100; --shadow:0 1px 2px rgba(34,32,29,.05);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",Arial,sans-serif;
+  font-size:13px;line-height:1.55;-webkit-font-smoothing:antialiased}
+code,.mono,input,button.cmd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+a{color:var(--blue)}
+
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;
+  padding:22px 26px 18px;border-bottom:1px solid var(--rule);background:var(--panel)}
+header h1{margin:0;font-size:21px;font-weight:600;letter-spacing:-.3px}
+header .sub{margin:5px 0 0;color:var(--muted);font-size:12.5px;max-width:760px}
+.tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.tag{border:1px solid var(--rule);border-radius:3px;padding:3px 8px;font-size:11px;
+  color:var(--muted);background:var(--paper);white-space:nowrap}
+.tag.hot{color:var(--accent);border-color:#E5C9C4;background:#FCF1EF}
+
+main{display:grid;grid-template-columns:252px minmax(420px,1fr) 270px;
+  gap:1px;background:var(--rule);min-height:calc(100vh - 84px)}
+.col{background:var(--paper);padding:16px 16px 24px;min-width:0}
+.col h2{margin:0 0 12px;font-size:11px;font-weight:600;letter-spacing:1.4px;
+  text-transform:uppercase;color:var(--muted)}
+.col h3{margin:20px 0 9px;font-size:11px;font-weight:600;letter-spacing:.6px;
+  color:var(--muted);text-transform:uppercase;border-top:1px solid var(--rule);padding-top:14px}
+.hint{color:var(--muted);font-size:11.5px;line-height:1.6;margin:0 0 12px}
+
+.cmd{display:block;width:100%;text-align:left;border:1px solid var(--rule);
+  background:var(--panel);color:var(--ink);border-radius:4px;padding:6px 9px;
+  margin-bottom:4px;font-size:11.5px;cursor:pointer;transition:background .12s,border-color .12s}
+.cmd:hover{background:#F1EEE6;border-color:#C9C3B6}
+.cmd:active{background:#E9E4D9}
+.cmd .u{color:var(--blue)}
+.cmd .d{color:var(--muted);font-size:10.5px;margin-left:6px}
+
+.urlrow{display:flex;gap:5px;margin-top:10px}
+.urlrow input{flex:1;min-width:0;border:1px solid var(--rule);border-radius:4px;
+  background:var(--panel);padding:6px 8px;font-size:11px;color:var(--ink)}
+.urlrow button{border:1px solid var(--rule);background:var(--panel);border-radius:4px;
+  padding:0 10px;cursor:pointer;font-size:11px;color:var(--ink)}
+.urlrow button:hover{background:#F1EEE6}
+.err{color:var(--accent);font-size:11px;margin-top:6px;min-height:16px}
+
+.kv{display:grid;grid-template-columns:auto 1fr;gap:5px 10px;font-size:11.5px;
+  align-items:baseline;margin-bottom:4px}
+.kv dt{color:var(--muted);white-space:nowrap}
+.kv dd{margin:0;text-align:right;word-break:break-all}
+.kv dd b{font-weight:600}
+.ok{color:var(--green)} .bad{color:var(--accent)} .warn{color:var(--gold)}
+
+.breadcrumb{font-size:11px;color:var(--muted);line-height:1.7;word-break:break-all;
+  background:var(--panel);border:1px solid var(--rule);border-radius:4px;padding:8px 9px}
+.breadcrumb .here{color:var(--accent);font-weight:600}
+
+.slots{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;margin-top:8px}
+.slot{aspect-ratio:1;border:1px solid var(--rule);border-radius:3px;background:var(--panel);
+  font-size:10px;color:var(--muted);cursor:pointer;display:flex;align-items:center;
+  justify-content:center;padding:0}
+.slot.filled{background:#EFEAE0;border-color:#CFC7B8;color:var(--ink);font-weight:600}
+.slot:hover{border-color:var(--accent)}
+
+.stage{padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.stagebar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.stagebar .left{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tbtn{border:1px solid var(--rule);background:var(--panel);border-radius:4px;
+  padding:5px 9px;font-size:11px;cursor:pointer;color:var(--ink)}
+.tbtn:hover{background:#F1EEE6}
+.tbtn.on{background:#EFEAE0;border-color:#CFC7B8;font-weight:600}
+.legend{font-size:11px;color:var(--muted)}
+
+#viewport{position:relative;width:100%;height:min(60vh,560px);min-height:340px;
+  overflow:hidden;border:1px solid var(--rule);border-radius:5px;
+  background:#EDE9E1;box-shadow:inset 0 0 0 1px rgba(255,255,255,.6)}
+#world{position:absolute;left:0;top:0;width:1600px;height:900px;
+  transform-origin:0 0;transition:transform 460ms cubic-bezier(.22,.61,.36,1)}
+.win{position:absolute;background:var(--panel);border:1px solid #CFC9BD;border-radius:5px;
+  box-shadow:0 2px 8px rgba(34,32,29,.09);overflow:hidden;cursor:pointer;
+  transition:border-color .16s,box-shadow .16s}
+.win:hover{border-color:var(--blue)}
+.win.framed{border:2px solid var(--accent);box-shadow:0 0 0 3px rgba(166,52,43,.12)}
+.win.desktop{background:repeating-linear-gradient(135deg,#E8E5DD,#E8E5DD 9px,#E2DED5 9px,#E2DED5 18px);
+  border-style:dashed;border-color:#C4BEB2;cursor:default}
+.win-bar{height:25px;display:flex;align-items:center;gap:5px;padding:0 8px;
+  background:#F3F0E9;border-bottom:1px solid var(--hair);font-size:11px;
+  color:#4A463F;user-select:none;white-space:nowrap;overflow:hidden}
+.win.desktop .win-bar{background:rgba(255,255,255,.55)}
+.dots{display:flex;gap:3px;flex:none}
+.dots i{width:7px;height:7px;border-radius:50%;display:block;background:#D8D2C7}
+.dots i:first-child{background:#E08B82}.dots i:nth-child(2){background:#E3C077}.dots i:nth-child(3){background:#9DC49F}
+.win-name{font-weight:500}
+.win-body{padding:9px 11px;font-size:11px;color:var(--muted);overflow:hidden}
+.win-body .placeholder{display:flex;align-items:center;justify-content:center;height:100%;
+  font-size:22px;font-weight:600;color:#B4ADA0;letter-spacing:-1px}
+.tabs{display:flex;gap:3px;padding:4px 7px 0;flex-wrap:wrap}
+.tab{border:1px solid var(--rule);border-bottom:none;border-radius:3px 3px 0 0;
+  padding:1px 7px;font-size:10px;color:var(--muted);background:#F6F3EC}
+.tab.sel{background:var(--panel);color:var(--ink);font-weight:600}
+.splitbox{position:absolute;border:1px dashed rgba(47,93,140,.42);border-radius:3px;
+  pointer-events:none}
+.splitbox span{position:absolute;left:4px;top:3px;font-size:9px;letter-spacing:.4px;
+  color:var(--blue);background:rgba(247,246,242,.88);padding:0 4px;border-radius:2px}
+.gap-handle{position:absolute;z-index:6;background:transparent}
+.gap-handle:hover{background:rgba(166,52,43,.22);border-radius:2px}
+.gap-handle.x{cursor:col-resize}.gap-handle.y{cursor:row-resize}
+#dockhint{position:absolute;z-index:9;pointer-events:none;border:2px solid var(--accent);
+  background:rgba(166,52,43,.09);border-radius:4px;display:none}
+#dockhint span{position:absolute;bottom:4px;left:6px;background:var(--accent);color:#fff;
+  font-size:10px;padding:1px 6px;border-radius:2px}
+
+.log{background:#F2EFE8;border:1px solid var(--rule);border-radius:4px;
+  height:132px;overflow:auto;padding:7px 9px;font-size:10.5px;line-height:1.65}
+.log div{white-space:pre-wrap;word-break:break-word;border-bottom:1px solid var(--hair)}
+.log div:last-child{border-bottom:none}
+.log .t{color:#9A9388}.log .tag{color:var(--blue);font-weight:600}
+.log .e{color:var(--accent)}
+
+details{border-top:1px solid var(--rule);margin-top:16px;padding-top:12px}
+summary{cursor:pointer;font-size:11.5px;font-weight:600;color:var(--muted)}
+details p,details li{font-size:11.5px;color:var(--muted);line-height:1.7}
+details h4{margin:14px 0 4px;font-size:11.5px;color:var(--ink)}
+.small{font-size:10.5px;color:var(--muted)}
+table.mini{width:100%;border-collapse:collapse;font-size:11px;margin:8px 0}
+table.mini th,table.mini td{border-bottom:1px solid var(--rule);padding:4px 6px;text-align:left}
+table.mini th{color:var(--muted);font-weight:500}
+@media (max-width:1100px){
+  main{grid-template-columns:1fr}
+  #viewport{height:420px}
+}
+</style>
+</head>
+<body>
+
+<!-- Machine-readable specification. checks/check_evidence.py reads this block and
+     diffs it against capture/commands.json, capture/release-defaults.json and
+     the Swift Settings struct. Do not reformat into JS object literals. -->
+<script id="spec-json" type="application/json">
+{
+  "subject": "TrellisWM 0.10.0 (build 560)",
+  "document_version": 2,
+  "scheme": "trelliswm",
+  "own_scheme": "trellisprobe",
+  "commands": ["everything","zoom-out","zoom-in","back","forward","neighbour","frame-window","frame-desktop","toggle-desktop","view","save-view","split-finder","arrange","float-all","settings"],
+  "panes": ["general","windows","tabs","appearance","gestures","apps","shortcuts","license"],
+  "settings_keys": ["animationSpeed","appColourAmount","appColours","deskGapHandles","deskPinchSteps","desktopEdgeStrength","dimBlur","dimDocked","dimOpacity","fixedMinimum","gap","gapHandlesAlwaysShown","gesturesLand","hiddenDesktopReturns","historyButtons","interruptLandings","keepPushed","menuBarControls","menuBarFill","overviewSwipesSpaces","panSensitivity","parkOutOfViewSmall","previewDrags","previewStyle","redrawWait","reflowWhileDragging","replaceMissionControl","returnReopenedWindows","shareRemovedSpace","soleFloatTakesDesktop","squeezeBelowMinimum","stepTowardPointer","stretchPictures","tabChipMargin","tabCloseButtons","tabCloseOnRight","tabGlassOpaqueWhenInactive","tabInset","tabPadding","tabSelectedChip","tabStripLights","tabStyle","tabTint","tintOpacity","touchPinchPan","tuckStrips","windowButtonsActOnGroup"],
+  "shortcuts": ["⌃⌥Space","⌃⌥↑ / ↓","⌃⌥← / →","⌃⌥⇧↑ / ↓","⌃⌥[ / ]","⌃⌥Return","⌃⌥D","⌃⌥N","⌃⌥⇧1–9","⌃⌥1–9","⌘⇧ drag","⌥ pinch"],
+  "grammar": {"Node":"desktop | panel | split","split":"{kind,id,axis:x|y,children:[Node],weights:[Double] sum=1}","panel":"{kind,id,views:[seat],selected,tabbed?}","desktop":"{kind:desktop,id:desktop}"},
+  "settled_ms": 460,
+  "note": "Names and query parameters are observable facts from the public guide; the implementation below is independent and ships no subject code or artwork."
+}
+</script>
+
+<header>
+  <div>
+    <h1>TrellisCore · 分形窗口模型交互模拟器</h1>
+    <p class="sub">递归 split 树 + 相机历史 + 15 条 URL 命令的独立实现。用来验证从可见证据逆推出的规格，<b>不是</b>原 app 的复刻品，不读写任何真实窗口。</p>
+  </div>
+  <div class="tags">
+    <span class="tag">Clean room · Study → Build → Check → Ready</span>
+    <span class="tag">spec v2 · 0.10.0</span>
+    <span class="tag hot">纯模拟 · 无需权限</span>
+  </div>
+</header>
+
+<main>
+  <!-- ── 左：命令面 ───────────────────────────────────────── -->
+  <section class="col">
+    <h2>01 / URL 命令</h2>
+    <p class="hint">点击即按公开 guide 的 URL 形式执行一次；带参数的命令用默认参数，可在下方输入任意合法 URL。</p>
+    <div id="cmds"></div>
+    <div class="urlrow">
+      <input id="url" placeholder="trelliswm://view?n=3" spellcheck="false">
+      <button id="go">执行</button>
+    </div>
+    <div class="err" id="urlerr"></div>
+
+    <h3>快捷键</h3>
+    <table class="mini" id="keys"></table>
+
+    <h3>树操作</h3>
+    <button class="tbtn" id="btn-demo" style="width:100%;margin-bottom:5px">重置为演示树</button>
+    <button class="tbtn" id="btn-observed" style="width:100%;margin-bottom:5px">载入真实模板权重</button>
+    <button class="tbtn" id="btn-addrandom" style="width:100%">Dock 一个新窗口 →</button>
+    <p class="hint" style="margin-top:9px">也可以直接拖窗口标题栏到另一窗口的某条边来 dock；拖两个窗口之间的间隙可调权重；点窗口 frame，再点一次退回。</p>
+  </section>
+
+  <!-- ── 中：画布 ─────────────────────────────────────────── -->
+  <section class="col stage">
+    <div class="stagebar">
+      <div class="left">
+        <button class="tbtn" id="btn-bounds">显示空间边界</button>
+        <button class="tbtn" id="btn-gaps">显示间隙手柄</button>
+        <button class="tbtn" id="btn-selftest">重跑自检</button>
+      </div>
+      <div class="legend" id="camlabel">camera: s-root</div>
+    </div>
+
+    <div id="viewport">
+      <div id="world"></div>
+      <div id="dockhint"><span></span></div>
+    </div>
+
+    <h2 style="margin:6px 0 0">运行事件</h2>
+    <div class="log" id="log"></div>
+
+    <details>
+      <summary>规格边界与置信度（随交付一起读）</summary>
+      <h4>已实测确定（置信度：高）</h4>
+      <p>树文法来自本机 app 自己的 <code class="mono">layout-*.json</code> / <code class="mono">departures.json</code>：<code class="mono">split.children</code> 可再放 <code class="mono">split</code>，任意深度；恒有一个 <code class="mono">desktop</code> 叶子承载浮动窗口；<code class="mono">panel.views</code> 多项即 tab group；<code class="mono">weights</code> 归一化。相机是 <code class="mono">framed</code> 节点 id + 一对历史栈，不是连续缩放引擎。命令 / 快捷键 / 权限 / 47 项设置来自公开 guide 与 bundle 内发布配置，逐字可核。</p>
+      <p><b>一处歧义（置信度：中）</b>：本机样本里 <code class="mono">framed = "desktop"</code> 时 <code class="mono">doc.root</code> 恰好也是 desktop 叶子（全浮动状态），因此「缩到最外」与「单独 frame Desktop」在数据上重合、无法区分。本实现按 guide 的 <code class="mono">frame-desktop</code> 语义将两者拆开：<code class="mono">everything → root.id</code>、<code class="mono">frame-desktop → "desktop"</code>；这属于约定，不是观测事实。</p>
+      <h4>推断或未知（置信度：中 / 低 / 未知）</h4>
+      <p>「dock 到边时新建 split 还是并入既有 split」没有成对前后快照，本实现采用可替换策略（同轴插为兄弟、异轴包一层、根叶子建新根）；手势阈值、easing 曲线、窗口指纹哈希与匹配权重、图片缓存淘汰、许可协议均标 <code class="mono">UNSPECIFIED</code>，未实现也未伪造等价性。460ms 动画时长取自日志 <code class="mono">SETTLED after 461/464 ms</code>，仅用于过渡观感。</p>
+      <h4>版权边界</h4>
+      <p>未复制任何源码、反汇编输出、图标、壁纸、教程资源或本地化文案（497 条仅作术语读取）。本页窗口名称、配色、文案均为独立撰写；产品名仅用于指代研究对象。</p>
+    </details>
+  </section>
+
+  <!-- ── 右：状态与校验 ───────────────────────────────────── -->
+  <section class="col">
+    <h2>02 / 相机状态</h2>
+    <dl class="kv">
+      <dt>framed</dt><dd><b id="s-framed">s-root</b></dd>
+      <dt>back / fwd</dt><dd id="s-stack">0 / 0</dd>
+      <dt>Desktop</dt><dd id="s-desk">visible</dd>
+      <dt>scale</dt><dd id="s-scale">1.00×</dd>
+      <dt>nodes / depth</dt><dd id="s-nodes">—</dd>
+      <dt>weights Σ</dt><dd id="s-weights">—</dd>
+    </dl>
+    <div class="breadcrumb" id="path">s-root</div>
+
+    <h3>Saved views 1–9</h3>
+    <p class="hint">点数字跳到该视图；<code class="mono">⌃⌥⇧n</code> 保存，<code class="mono">⌃⌥n</code> 跳转。</p>
+    <div class="slots" id="slots"></div>
+
+    <h3>Check 阶段</h3>
+    <dl class="kv">
+      <dt>URL 命令</dt><dd><b id="c-cmds">—</b></dd>
+      <dt>settings pane</dt><dd><b id="c-panes">—</b></dd>
+      <dt>release keys</dt><dd><b id="c-keys">—</b></dd>
+      <dt>快捷键行</dt><dd><b id="c-short">—</b></dd>
+      <dt>JS 自检</dt><dd><b id="c-selftest">running</b></dd>
+      <dt>Swift 单测</dt><dd class="ok">18 / 18 passed</dd>
+    </dl>
+    <div class="breadcrumb" id="selftest" data-result="pending">自检运行中…</div>
+
+    <h3>证据覆盖</h3>
+    <table class="mini">
+      <tr><th>层</th><th>来源</th></tr>
+      <tr><td>L1</td><td>公开 guide / appcast</td></tr>
+      <tr><td>L2</td><td>Info.plist / ReleaseSettings</td></tr>
+      <tr><td>L3</td><td>本机布局文档（结构）</td></tr>
+      <tr><td>L4</td><td>运行日志（事件 / 时长）</td></tr>
+      <tr><td>L5</td><td>符号名（仅术语）</td></tr>
+    </table>
+    <p class="small">详见 <code class="mono">capture/evidence.md</code>、<code class="mono">investigation.cany/questions.md</code>。</p>
+  </section>
+</main>
+
+<script>
+"use strict";
+const SPEC = JSON.parse(document.getElementById("spec-json").textContent);
+const WORLD = {w:1600, h:900};
+const GAP = 12;                 // ReleaseSettings.json: gap = 12
+const MIN_SHARE = 0.05;        // squeezeBelowMinimum guard
+const MOTION_MS = SPEC.settled_ms;
+
+/* ── Independent JS implementation of the derived grammar ────────────── */
+let uid = 0;
+const nextID = p => `${p}-gen${++uid}`;
+
+function normalize(ws, n){
+  let a = ws.slice(0, n).map(v => Math.max(0, v));
+  while (a.length < n) a.push(1 / n);
+  const s = a.reduce((x,y) => x+y, 0);
+  return s > 0 ? a.map(v => v/s) : Array(n).fill(1/n);
+}
+function split(id, axis, children, weights){
+  return {kind:"split", id, axis, children,
+          weights: normalize(weights || children.map(()=>1/children.length), children.length)};
+}
+const panel = (id, views, name, colour, selected) =>
+  ({kind:"panel", id, views, selected: selected || views[0], name, colour, tabbed: views.length>1});
+const desktop = () => ({kind:"desktop", id:"desktop"});
+
+/* Tree shape is the observed departure template (scrubbed): a y-split holding
+   an x-split which itself holds a nested y-split. Two weight sets: readable
+   demo, and the exact persisted weights. */
+function demoTree(observed){
+  const nested = split("s-nested", "y",
+    [panel("p-browser", ["w-browser"], "Browser", "#2F5D8C"),
+     panel("p-notes",   ["w-notes","w-notes-2"], "Notes", "#8A6100")],
+    [0.5, 0.5]);
+  const work = split("s-work", "x",
+    [panel("p-editor",  ["w-editor"],  "Editor",  "#3E6B4C"),
+     panel("p-term",    ["w-term"],    "Terminal","#4A463F"),
+     nested,
+     panel("p-preview", ["w-preview"], "Preview", "#A6342B")],
+    observed ? [0.5853658536585367,0.01219512195121951,0.01219512195121951,0.39024390243902435]
+             : [0.34,0.20,0.24,0.22]);
+  return split("s-root", "y", [work, desktop()],
+    observed ? [0.6666666666666666,0.3333333333333333] : [0.68,0.32]);
+}
+
+const flatten = n => [n, ...(n.children || []).flatMap(flatten)];
+const nodeByID = (root,id) => flatten(root).find(n => n.id === id);
+const parentOf = (root,id) => flatten(root)
+  .find(n => n.kind === "split" && n.children.some(c => c.id === id));
+const leaves = root => flatten(root).filter(n => n.kind !== "split");
+const depth = n => n.kind !== "split" ? 0 : 1 + Math.max(0, ...n.children.map(depth));
+function pathTo(root, id, acc){
+  acc = acc || [];
+  if (root.id === id) return [...acc, root.id];
+  for (const c of root.children || []){
+    const hit = pathTo(c, id, [...acc, root.id]);
+    if (hit) return hit;
+  }
+  return null;
+}
+function validate(root){
+  for (const n of flatten(root)){
+    if (n.kind !== "split") continue;
+    if (!n.children.length) return `split '${n.id}' has no children`;
+    if (n.children.length !== n.weights.length) return `split '${n.id}': children/weights mismatch`;
+    if (n.weights.some(w => w < 0)) return `split '${n.id}': negative weight`;
+    const s = n.weights.reduce((a,b)=>a+b,0);
+    if (Math.abs(s-1) > 1e-6) return `split '${n.id}': weights sum ${s}`;
+  }
+  const desktops = flatten(root).filter(n => n.kind === "desktop").length;
+  if (desktops !== 1) return `expected exactly one desktop leaf, found ${desktops}`;
+  return null;
+}
+/** Map node id -> rect, mirroring the independent Swift LayoutEngine.rects(). */
+function rects(root, frame){
+  const out = {};
+  (function place(n, r){
+    out[n.id] = r;
+    if (n.kind !== "split") return;
+    const total = n.axis === "x" ? r.w : r.h;
+    const usable = Math.max(0, total - GAP*(n.children.length-1));
+    let cur = n.axis === "x" ? r.x : r.y;
+    n.children.forEach((c,i) => {
+      const len = usable * n.weights[i];
+      place(c, n.axis === "x"
+        ? {x:cur, y:r.y, w:len, h:r.h}
+        : {x:r.x, y:cur, w:r.w, h:len});
+      cur += len + GAP;
+    });
+  })(root, frame);
+  return out;
+}
+
+/* ── Tree mutations (pure: return a new tree) ─────────────────────────── */
+function clone(n){
+  const c = Object.assign({}, n);
+  if (c.children) c.children = c.children.map(clone);
+  if (c.weights)  c.weights  = c.weights.slice();
+  if (c.views)    c.views    = c.views.slice();
+  return c;
+}
+function insertPanel(root, targetID, edge, fresh){
+  const axis = (edge === "left" || edge === "right") ? "x" : "y";
+  const neg  = (edge === "left" || edge === "up");
+  let done = false;
+  const used = new Set(flatten(root).map(n=>n.id));
+  const freshSplit = () => { let k=flatten(root).length, id;
+    do { id = `split-gen${k++}`; } while (used.has(id)); used.add(id); return id; };
+  function walk(n){
+    if (done) return n;
+    if (n.kind === "split"){
+      const idx = n.children.findIndex(c => c.id === targetID);
+      if (idx >= 0){
+        done = true;
+        const kids = n.children.slice(), ws = n.weights.slice();
+        if (n.axis === axis){
+          const share = ws[idx]/2;
+          ws[idx] -= share;
+          const at = neg ? idx : idx+1;
+          kids.splice(at, 0, fresh); ws.splice(at, 0, share);
+          return split(n.id, n.axis, kids, ws);
+        }
+        kids[idx] = split(freshSplit(), axis,
+          neg ? [fresh, kids[idx]] : [kids[idx], fresh], [0.5,0.5]);
+        return split(n.id, n.axis, kids, ws);
+      }
+      const kids = n.children.map(walk);
+      return kids.some((k,i)=>k!==n.children[i]) ? split(n.id, n.axis, kids, n.weights) : n;
+    }
+    if (n.id === targetID && n.kind !== "desktop"){
+      done = true;
+      return split(freshSplit(), axis, neg ? [fresh,n] : [n,fresh], [0.5,0.5]);
+    }
+    return n;
+  }
+  let out = walk(root);
+  // Docking onto the desktop leaf: place beside it, never inside it.
+  if (!done && targetID === "desktop"){
+    out = split(freshSplit(), axis, neg ? [fresh,desktop()] : [desktop(),fresh], [0.5,0.5]);
+    done = true;
+  }
+  return done ? out : null;
+}
+function removeNode(root, id){
+  if (id === "desktop") return null;
+  let done = false;
+  function walk(n){
+    if (done || n.kind !== "split") return n;
+    const idx = n.children.findIndex(c => c.id === id);
+    if (idx >= 0 && n.children[idx].kind !== "desktop"){
+      done = true;
+      const kids = n.children.slice(), ws = n.weights.slice();
+      kids.splice(idx,1); ws.splice(idx,1);
+      if (kids.length === 1) return kids[0];
+      return split(n.id, n.axis, kids, ws);
+    }
+    const kids = n.children.map(walk);
+    return kids.some((k,i)=>k!==n.children[i]) ? split(n.id, n.axis, kids, n.weights) : n;
+  }
+  const out = walk(root);
+  return done ? out : null;
+}
+function resizeGap(root, parentID, a, b, delta){
+  function walk(n){
+    if (n.kind !== "split") return n;
+    if (n.id === parentID){
+      const ws = n.weights.slice();
+      const upper = Math.max(0, ws[b]-MIN_SHARE);
+      const lower = Math.min(0, -(ws[a]-MIN_SHARE));
+      const d = delta >= 0 ? Math.min(delta, upper) : Math.max(delta, lower);
+      ws[a] += d; ws[b] -= d;
+      return split(n.id, n.axis, n.children, ws);
+    }
+    return split(n.id, n.axis, n.children.map(walk), n.weights);
+  }
+  return walk(root);
+}
+function neighbourOf(root, fromID, dir, frame){
+  const r = rects(root, frame);
+  const o = r[fromID];
+  if (!o) return null;
+  let best = null;
+  for (const n of leaves(root)){
+    if (n.id === fromID || n.id === "desktop") continue;
+    const c = r[n.id]; if (!c) continue;
+    const om={x:o.x+o.w/2,y:o.y+o.h/2}, cm={x:c.x+c.w/2,y:c.y+c.h/2};
+    let along, cross;
+    if (dir==="left"){ along=om.x-cm.x; cross=Math.abs(om.y-cm.y); }
+    else if (dir==="right"){ along=cm.x-om.x; cross=Math.abs(om.y-cm.y); }
+    else if (dir==="up"){ along=om.y-cm.y; cross=Math.abs(om.x-cm.x); }
+    else { along=cm.y-om.y; cross=Math.abs(om.x-cm.x); }
+    if (along <= 0) continue;
+    const score = along + cross*0.001;
+    if (!best || score < best.score) best = {id:n.id, score};
+  }
+  return best && best.id;
+}
+
+/* ── Camera ───────────────────────────────────────────────────────────── */
+/* "everything" (zoomed out) frames the ROOT. "frame-desktop" frames the
+   desktop leaf. In the observed all-floating documents these coincide because
+   the root IS the desktop leaf, so the persisted value "desktop" is ambiguous;
+   see investigation.cany/questions.md Q16. This build keeps them distinct. */
+function initialCamera(root){
+  return {framed: root ? root.id : "s-root", back:[], forward:[], saved:{}, desktopHidden:false};
+}
+function cameraMove(cam, target, root){
+  if (target === cam.framed) return cam;
+  return {...cam, back:[...cam.back, cam.framed], forward:[], framed:target};
+}
+function applyCamera(cam, action, root, frame){
+  const R = rects(root, frame);
+  switch(action.t){
+    case "everything": return cameraMove(cam, root.id, root);
+    case "zoomOut": {
+      const p = pathTo(root, cam.framed) || [root.id];
+      return cameraMove(cam, p.length > 1 ? p[p.length-2] : root.id, root);
+    }
+    case "zoomIn": {
+      const n = nodeByID(root, cam.framed);
+      let target;
+      if (n && n.kind === "split"){
+        const kid = n.children.find(c => c.id !== "desktop");
+        target = kid ? kid.id : cam.framed;
+      } else {
+        const first = leaves(root).find(l => l.id !== "desktop");
+        target = first ? first.id : cam.framed;
+      }
+      return cameraMove(cam, target, root);
+    }
+    case "frame": {
+      if (!nodeByID(root, action.id)) return cam;
+      return cameraMove(cam, cam.framed === action.id ? root.id : action.id, root);
+    }
+    case "frameDesktop":
+      return cameraMove(cam, cam.framed === "desktop" ? root.id : "desktop", root);
+    case "toggleDesktop": return {...cam, desktopHidden:!cam.desktopHidden};
+    case "back": {
+      if (!cam.back.length) return cam;
+      const prev = cam.back[cam.back.length-1];
+      return {...cam, back:cam.back.slice(0,-1), forward:[...cam.forward,cam.framed], framed:prev};
+    }
+    case "forward": {
+      if (!cam.forward.length) return cam;
+      const next = cam.forward[cam.forward.length-1];
+      return {...cam, forward:cam.forward.slice(0,-1), back:[...cam.back,cam.framed], framed:next};
+    }
+    case "saveView": {
+      if (action.n < 1 || action.n > 9) return cam;
+      return {...cam, saved:{...cam.saved, [action.n]:cam.framed}};
+    }
+    case "goToView": {
+      const t = cam.saved[action.n];
+      if (!t || (t !== "desktop" && !nodeByID(root,t))) return cam;
+      return cameraMove(cam, t, root);
+    }
+    case "neighbour": {
+      const t = neighbourOf(root, cam.framed, action.dir, frame);
+      return t ? cameraMove(cam, t, root) : cam;
+    }
+    default: return cam;
+  }
+}
+
+/* ── URL command parser (accepts evidence scheme + own scheme) ─────────── */
+function parseURL(raw){
+  const m = /^([a-z][a-z0-9]*):\/\/([^?#]+)(?:\?([^#]*))?$/i.exec(raw.trim());
+  if (!m) throw new Error("expected scheme://command[?query]");
+  if (![SPEC.scheme, SPEC.own_scheme].includes(m[1].toLowerCase()))
+    throw new Error(`unexpected scheme '${m[1]}'`);
+  const name = m[2].toLowerCase();
+  const q = {};
+  (m[3]||"").split("&").filter(Boolean).forEach(p=>{
+    const i = p.indexOf("=");
+    q[(i<0?p:p.slice(0,i)).toLowerCase()] = (i<0?"":p.slice(i+1)).toLowerCase();
+  });
+  if (!SPEC.commands.includes(name)) throw new Error(`unknown command '${name}'`);
+  const num = key => {
+    const n = Number(q[key]);
+    if (!Number.isInteger(n) || n<1 || n>9) throw new Error(`${name} requires ${key}=1..9`);
+    return n;
+  };
+  switch(name){
+    case "everything": return {name, act:{t:"everything"}};
+    case "zoom-out":   return {name, act:{t:"zoomOut"}};
+    case "zoom-in":    return {name, act:{t:"zoomIn"}};
+    case "back":       return {name, act:{t:"back"}};
+    case "forward":    return {name, act:{t:"forward"}};
+    case "neighbour": {
+      if (!["left","right","up","down"].includes(q.dir))
+        throw new Error("neighbour requires dir=left|right|up|down");
+      return {name, act:{t:"neighbour", dir:q.dir}};
+    }
+    case "frame-window":  return {name, act:{t:"frame", id:state.focus || "desktop"}};
+    case "frame-desktop": return {name, act:{t:"frameDesktop"}};
+    case "toggle-desktop":return {name, act:{t:"toggleDesktop"}};
+    case "view":          return {name, act:{t:"goToView", n:num("n")}};
+    case "save-view":     return {name, act:{t:"saveView", n:num("n")}};
+    case "settings": {
+      if (q.pane && !SPEC.panes.includes(q.pane)) throw new Error(`unknown pane '${q.pane}'`);
+      return {name, act:null, pane:q.pane || "general"};
+    }
+    case "split-finder":  return {name, act:null, tree:"dock"};
+    case "arrange":       return {name, act:null, tree:"arrange"};
+    case "float-all":     return {name, act:null, tree:"floatAll"};
+  }
+  return {name, act:null};
+}
+
+/* ── Application state ────────────────────────────────────────────────── */
+const state = {
+  tree: demoTree(false),
+  cam: initialCamera(),
+  focus: "p-editor",
+  showBounds: false,
+  showGaps: true,
+  scale: 1,
+  log: [],
+};
+const $ = s => document.querySelector(s);
+const viewport = $("#viewport"), world = $("#world"), hint = $("#dockhint");
+const T0 = performance.now();
+function log(tag, msg){
+  const t = ((performance.now()-T0)/1000).toFixed(3).padStart(8," ");
+  state.log.push({t, tag, msg});
+  if (state.log.length > 90) state.log.shift();
+  const el = $("#log");
+  el.innerHTML = state.log.slice(-45).map(e =>
+    `<div><span class="t">${e.t}</span> <span class="tag">${e.tag}</span> ${escapeHTML(e.msg)}</div>`).join("");
+  el.scrollTop = el.scrollHeight;
+}
+const escapeHTML = s => String(s).replace(/[&<>"']/g, c =>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[c]);
+
+/* ── Rendering ────────────────────────────────────────────────────────── */
+let bootRender = true;
+function render(){
+  const R = rects(state.tree, {x:0,y:0,w:WORLD.w,h:WORLD.h});
+  const frame = R[state.cam.framed] || R[state.tree.id];
+  const vw = viewport.clientWidth, vh = viewport.clientHeight;
+  const pad = 18;
+  const scale = Math.min((vw-pad*2)/frame.w, (vh-pad*2)/frame.h);
+  const tx = vw/2 - (frame.x+frame.w/2)*scale;
+  const ty = vh/2 - (frame.y+frame.h/2)*scale;
+  state.scale = scale;
+  const tf = `translate(${tx}px,${ty}px) scale(${scale})`;
+  if (bootRender){
+    // First paint must land on the final camera position. Otherwise the 460ms
+    // transition animates from scale(1) and headless captures a half-zoomed
+    // frame (virtual time does not advance compositor transitions).
+    world.style.transition = "none";
+    world.style.transform = tf;
+    void world.offsetWidth;            // flush the un-transitioned transform
+    world.style.transition = "";
+    bootRender = false;
+  } else {
+    world.style.transform = tf;
+  }
+
+  let html = "";
+  if (state.showBounds){
+    for (const n of flatten(state.tree)){
+      if (n.kind !== "split") continue;
+      const r = R[n.id];
+      html += `<div class="splitbox" style="left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px">
+        <span>${escapeHTML(n.id)} · axis ${n.axis}</span></div>`;
+    }
+  }
+  for (const n of flatten(state.tree)){
+    if (n.kind === "split") continue;
+    const r = R[n.id];
+    const isDesk = n.kind === "desktop";
+    const hidden = isDesk && state.cam.desktopHidden;
+    if (hidden) continue;
+    const framed = state.cam.framed === n.id;
+    const tiny = r.w < 90 || r.h < 70;
+    const cls = `win${isDesk?" desktop":""}${framed?" framed":""}`;
+    let inner = "";
+    if (isDesk){
+      inner = `<div class="win-bar"><span class="dots"><i></i><i></i><i></i></span>
+        <span class="win-name">Desktop · floating layer</span></div>
+        <div class="win-body">浮动窗口层 · 树中恒定唯一的 desktop 叶子；双击可 frame</div>`;
+    } else if (tiny){
+      inner = `<div class="win-bar"><span class="win-name">${escapeHTML(n.name||"Window")}</span></div>
+        <div class="win-body" style="height:calc(100% - 25px);padding:0">
+          <div class="placeholder">${escapeHTML((n.name||"W")[0])}</div></div>`;
+    } else {
+      const tabs = n.views && n.views.length > 1
+        ? `<div class="tabs">${n.views.map((v,i)=>
+            `<span class="tab${v===n.selected?" sel":""}">${escapeHTML(n.name)} ${i+1}</span>`).join("")}</div>` : "";
+      inner = `<div class="win-bar" data-title="${escapeHTML(n.id)}">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="win-name">${escapeHTML(n.name)}</span>
+          <span style="margin-left:auto;color:#9A9388;font-size:9px">${escapeHTML(n.id)}</span>
+        </div>${tabs}<div class="win-body">
+          <div style="height:7px;width:${Math.min(88,32+n.id.length*7)}%;background:${n.colour||"#C9C3B6"};opacity:.28;border-radius:2px;margin-bottom:7px"></div>
+          <div style="height:5px;width:76%;background:#E3DED4;border-radius:2px;margin-bottom:5px"></div>
+          <div style="height:5px;width:61%;background:#E3DED4;border-radius:2px;margin-bottom:5px"></div>
+          <div style="height:5px;width:82%;background:#E3DED4;border-radius:2px"></div>
+        </div>`;
+    }
+    html += `<div class="${cls}" data-id="${escapeHTML(n.id)}" style="left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px">${inner}</div>`;
+  }
+  // Gap handles between adjacent siblings (only for leaf-ish siblings).
+  if (state.showGaps){
+    for (const s of flatten(state.tree)){
+      if (s.kind !== "split") continue;
+      for (let i=0;i<s.children.length-1;i++){
+        const a = R[s.children[i].id], b = R[s.children[i+1].id];
+        const box = s.axis === "x"
+          ? {x:a.x+a.w, y:a.y, w:Math.max(6,b.x-(a.x+a.w)), h:a.h}
+          : {x:a.x, y:a.y+a.h, w:a.w, h:Math.max(6,b.y-(a.y+a.h))};
+        html += `<div class="gap-handle ${s.axis}" data-gap="${escapeHTML(s.id)}"
+          data-a="${i}" data-b="${i+1}" data-axis="${s.axis}"
+          style="left:${box.x}px;top:${box.y}px;width:${box.w}px;height:${box.h}px"></div>`;
+      }
+    }
+  }
+  world.innerHTML = html;
+  updatePanel(R);
+}
+function updatePanel(R){
+  R = R || rects(state.tree,{x:0,y:0,w:WORLD.w,h:WORLD.h});
+  const c = state.cam;
+  $("#s-framed").textContent = c.framed;
+  $("#s-stack").textContent = `${c.back.length} / ${c.forward.length}`;
+  $("#s-desk").innerHTML = c.desktopHidden ? '<span class="warn">hidden</span>' : '<span class="ok">visible</span>';
+  $("#s-scale").textContent = state.scale.toFixed(2)+"×";
+  $("#s-nodes").textContent = `${flatten(state.tree).length} / ${depth(state.tree)}`;
+  const sums = flatten(state.tree).filter(n=>n.kind==="split")
+    .map(n=>n.weights.reduce((a,b)=>a+b,0));
+  const good = sums.every(s=>Math.abs(s-1)<1e-6) && !validate(state.tree);
+  $("#s-weights").innerHTML = good
+    ? `<span class="ok">1.000 × ${sums.length} splits</span>`
+    : `<span class="bad">broken</span>`;
+  const p = pathTo(state.tree, c.framed) || [state.tree.id];
+  $("#path").innerHTML = p.map((x,i)=> i===p.length-1
+    ? `<span class="here">${escapeHTML(x)}</span>` : escapeHTML(x)).join(" → ");
+  $("#camlabel").textContent = `camera: ${c.framed} · ${state.scale.toFixed(2)}×`;
+  $("#slots").innerHTML = Array.from({length:9},(_,i)=>{
+    const n=i+1, has=!!c.saved[n];
+    return `<div class="slot${has?" filled":""}" data-view="${n}" title="${has?escapeHTML(c.saved[n]):"empty"}">${n}</div>`;
+  }).join("");
+  $("#c-cmds").textContent = `${SPEC.commands.length} / 15`;
+  $("#c-panes").textContent = `${SPEC.panes.length} / 8`;
+  $("#c-keys").textContent = `${SPEC.settings_keys.length} / 47`;
+  $("#c-short").textContent = `${SPEC.shortcuts.length} rows`;
+}
+
+/* ── Motion envelope (logs only; the CSS transition does the visual work) ─ */
+let motionTimer = null;
+function motion(target, detail){
+  clearTimeout(motionTimer);
+  log("MOTION", `land → ${target}${detail?" · "+detail:""}`);
+  log("BEGIN", `slow ${MOTION_MS} ms`);
+  motionTimer = setTimeout(()=>{
+    log("SETTLED", `after ${MOTION_MS} ms`);
+    log("LANDED", `${target} in ${MOTION_MS+668} ms`);
+  }, MOTION_MS);
+}
+
+/* ── Command dispatch ─────────────────────────────────────────────────── */
+function runURL(raw){
+  $("#urlerr").textContent = "";
+  let cmd;
+  try { cmd = parseURL(raw); }
+  catch(e){ $("#urlerr").textContent = "✗ "+e.message; log("ERROR", e.message); return false; }
+  const before = state.cam.framed;
+  if (cmd.act) state.cam = applyCamera(state.cam, cmd.act, state.tree,
+    {x:0,y:0,w:WORLD.w,h:WORLD.h});
+  if (cmd.pane) log("SETTINGS", `open pane=${cmd.pane}`);
+  if (cmd.tree === "dock") dockNew("right");
+  if (cmd.tree === "arrange") log("ARRANGE", "all windows reflowed (simulated)");
+  if (cmd.tree === "floatAll"){
+    state.tree = desktop();           // root IS the desktop leaf, as observed
+    state.cam = initialCamera(state.tree);
+    log("FLOAT", "all windows returned to the Desktop · root == desktop");
+  }
+  const after = state.cam.framed;
+  log("CMD", `${raw}  ${before!==after ? `(${before} → ${after})` : "(no camera change)"}`);
+  if (before !== after) motion(after, cmd.name);
+  $("#url").value = "";
+  render();
+  return true;
+}
+
+let newCount = 0;
+function dockNew(edge, targetID){
+  const target = targetID || state.focus || "p-editor";
+  const name = `New ${++newCount}`;
+  const fresh = panel(nextID("p"), [`w-${name.replace(/\s/g,"").toLowerCase()}`],
+    name, "#6E6860");
+  const out = insertPanel(clone(state.tree), target, edge, fresh);
+  if (!out){ log("ERROR", `cannot dock at '${target}'`); return; }
+  state.tree = out;
+  state.focus = fresh.id;
+  log("DOCK", `${name} → ${edge} of ${target}; depth now ${depth(state.tree)}`);
+  motion(target, `dock ${edge}`);
+}
+
+/* ── Interaction: click to frame, drag title to dock, drag gap to resize ── */
+let drag = null;
+document.addEventListener("pointerdown", e => {
+  const gap = e.target.closest("[data-gap]");
+  if (gap){
+    const s = nodeByID(state.tree, gap.dataset.gap);
+    const total = s.axis === "x" ? rects(state.tree,{x:0,y:0,w:WORLD.w,h:WORLD.h})[s.id].w
+                                 : rects(state.tree,{x:0,y:0,w:WORLD.w,h:WORLD.h})[s.id].h;
+    drag = {kind:"gap", parent:s.id, a:+gap.dataset.a, b:+gap.dataset.b,
+            axis:s.axis, start: s.axis==="x"?e.clientX:e.clientY, total,
+            base: state.tree};
+    e.preventDefault(); return;
+  }
+  const title = e.target.closest("[data-title]");
+  if (title){
+    drag = {kind:"dock", id:title.dataset.title, startX:e.clientX, startY:e.clientY,
+            moved:false};
+    e.preventDefault(); return;
+  }
+  const slot = e.target.closest("[data-view]");
+  if (slot){ runURL(`${SPEC.own_scheme}://view?n=${slot.dataset.view}`); return; }
+  const win = e.target.closest(".win[data-id]");
+  if (win && win.classList.contains("desktop")){
+    runURL(`${SPEC.own_scheme}://frame-desktop`); return;
+  }
+  if (win){
+    state.focus = win.dataset.id;
+    runURL(`${SPEC.own_scheme}://frame-window`);
+  }
+});
+document.addEventListener("pointermove", e => {
+  if (!drag) return;
+  if (drag.kind === "gap"){
+    const d = ((drag.axis==="x"?e.clientX:e.clientY) - drag.start)
+              / (drag.total * state.scale);
+    state.tree = resizeGap(clone(drag.base), drag.parent, drag.a, drag.b, d);
+    render();
+  } else {
+    if (Math.abs(e.clientX-drag.startX)+Math.abs(e.clientY-drag.startY) > 5) drag.moved = true;
+    if (!drag.moved) return;
+    // Translate client coords into world coords using the transformed world box.
+    const wr = world.getBoundingClientRect();
+    const p = {x:(e.clientX-wr.left)/state.scale, y:(e.clientY-wr.top)/state.scale};
+    const R = rects(state.tree,{x:0,y:0,w:WORLD.w,h:WORLD.h});
+    let hit = null;
+    for (const n of flatten(state.tree)){
+      if (n.kind === "split") continue;
+      const r = R[n.id];
+      if (p.x>=r.x && p.x<=r.x+r.w && p.y>=r.y && p.y<=r.y+r.h){ hit={n,r}; break; }
+    }
+    if (hit){
+      const r = hit.r;
+      const d = {left:p.x-r.x, right:r.x+r.w-p.x, top:p.y-r.y, bottom:r.y+r.h-p.y};
+      const edge = Object.keys(d).reduce((a,b)=>d[a]<d[b]?a:b);
+      hint.style.display = "block";
+      hint.style.left = `${r.x*state.scale + (wr.left-viewport.getBoundingClientRect().left)}px`;
+      hint.style.top  = `${r.y*state.scale + (wr.top -viewport.getBoundingClientRect().top)}px`;
+      hint.style.width = `${r.w*state.scale}px`;
+      hint.style.height= `${r.h*state.scale}px`;
+      hint.querySelector("span").textContent = `dock ${edge}`;
+      drag.edge = edge; drag.target = hit.n.id;
+    } else { hint.style.display="none"; drag.edge=null; }
+  }
+});
+document.addEventListener("pointerup", () => {
+  if (!drag) return;
+  const d = drag; drag = null; hint.style.display = "none";
+  if (d.kind === "gap"){ log("GAP", `resized ${d.parent}[${d.a}|${d.b}]`); return; }
+  if (d.moved && d.edge && d.target) dockNew(d.edge, d.target);
+});
+viewport.addEventListener("dblclick", e => {
+  const w = e.target.closest(".win[data-id]");
+  if (w && w.classList.contains("desktop")) runURL(`${SPEC.own_scheme}://frame-desktop`);
+  else if (w) runURL(`${SPEC.own_scheme}://frame-window`);
+});
+
+/* ── Keyboard ─────────────────────────────────────────────────────────── */
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT") return;
+  if (!(e.ctrlKey && e.altKey)) return;
+  const k = e.key, S = SPEC.own_scheme;
+  let url = null;
+  if (k === " ") url = `${S}://everything`;
+  else if (k === "ArrowUp" && e.shiftKey) url = `${S}://neighbour?dir=up`;
+  else if (k === "ArrowDown" && e.shiftKey) url = `${S}://neighbour?dir=down`;
+  else if (k === "ArrowUp") url = `${S}://zoom-out`;
+  else if (k === "ArrowDown") url = `${S}://zoom-in`;
+  else if (k === "ArrowLeft") url = `${S}://neighbour?dir=left`;
+  else if (k === "ArrowRight") url = `${S}://neighbour?dir=right`;
+  else if (k === "[") url = `${S}://back`;
+  else if (k === "]") url = `${S}://forward`;
+  else if (k === "Enter") url = `${S}://frame-window`;
+  else if (k.toLowerCase() === "d") url = `${S}://toggle-desktop`;
+  else if (k.toLowerCase() === "n") url = `${S}://split-finder`;
+  else if (/^[1-9]$/.test(k)) url = `${S}://${e.shiftKey?"save-view":"view"}?n=${k}`;
+  else if (k === "Escape") url = `${S}://everything`;
+  if (url){ e.preventDefault(); runURL(url); }
+});
+
+/* ── Static UI ────────────────────────────────────────────────────────── */
+const CMD_META = [
+  ["everything","Show everything"], ["zoom-out","Step out a level"],
+  ["zoom-in","Step in a level"], ["back","Back"], ["forward","Forward"],
+  ["neighbour?dir=left","Neighbouring space"], ["frame-window","Frame focused window"],
+  ["frame-desktop","Frame the Desktop"], ["toggle-desktop","Hide / show Desktop"],
+  ["view?n=1","Go to saved view"], ["save-view?n=1","Save the view"],
+  ["split-finder","Split with a new window"], ["arrange","Arrange all windows"],
+  ["float-all","Float all windows"], ["settings?pane=shortcuts","Open Settings"],
+];
+$("#cmds").innerHTML = CMD_META.map(([u,d]) =>
+  `<button class="cmd" data-url="${SPEC.scheme}://${u}">
+     <span class="u">//${escapeHTML(u)}</span><span class="d">${escapeHTML(d)}</span>
+   </button>`).join("");
+$("#cmds").addEventListener("click", e => {
+  const b = e.target.closest("[data-url]");
+  if (b) runURL(b.dataset.url);
+});
+const KEY_ROWS = [
+  ["⌃⌥Space","everything"], ["⌃⌥↑ / ↓","zoom-out / zoom-in"],
+  ["⌃⌥← / →","neighbour left/right"], ["⌃⌥⇧↑ / ↓","neighbour up/down"],
+  ["⌃⌥[ / ]","back / forward"], ["⌃⌥Return","frame-window"],
+  ["⌃⌥D","toggle-desktop"], ["⌃⌥N","split-finder"],
+  ["⌃⌥⇧1–9","save-view?n="], ["⌃⌥1–9","view?n="],
+];
+$("#keys").innerHTML = KEY_ROWS.map(([k,c]) =>
+  `<tr><td class="mono">${escapeHTML(k)}</td><td class="mono" style="color:#6E6860">${escapeHTML(c)}</td></tr>`).join("");
+$("#go").addEventListener("click", () => runURL($("#url").value));
+$("#url").addEventListener("keydown", e => { if (e.key === "Enter") runURL($("#url").value); });
+$("#btn-bounds").addEventListener("click", e => {
+  state.showBounds = !state.showBounds;
+  e.currentTarget.classList.toggle("on", state.showBounds); render();
+});
+$("#btn-gaps").addEventListener("click", e => {
+  state.showGaps = !state.showGaps;
+  e.currentTarget.classList.toggle("on", state.showGaps); render();
+});
+$("#btn-gaps").classList.add("on");
+$("#btn-demo").addEventListener("click", () => {
+  state.tree = demoTree(false); state.cam = initialCamera(state.tree); state.focus = "p-editor";
+  log("RESET", "demo tree · even weights"); render();
+});
+$("#btn-observed").addEventListener("click", () => {
+  state.tree = demoTree(true); state.cam = initialCamera(state.tree);
+  log("RESET", "observed template weights [.585, .012, .012, .390] · narrow tiles show app glyphs");
+  render();
+});
+$("#btn-addrandom").addEventListener("click", () => { dockNew("right"); render(); });
+window.addEventListener("resize", render);
+
+/* ── In-page self test (also read by headless verification) ─────────────── */
+function selfTest(){
+  const results = [];
+  const t = (name, fn) => { try { fn(); results.push([name,true,""]); }
+                            catch(e){ results.push([name,false,e.message]); } };
+  const assert = (c,m) => { if (!c) throw new Error(m || "assertion failed"); };
+  const FR = {x:0,y:0,w:WORLD.w,h:WORLD.h};
+
+  t("grammar: tree validates", ()=>{ assert(!validate(state.tree), validate(state.tree)); });
+  t("grammar: observed weights validate", ()=>{ assert(!validate(demoTree(true))); });
+  t("grammar: exactly one desktop leaf", ()=>{
+    assert(flatten(state.tree).filter(n=>n.kind==="desktop").length===1); });
+  t("grammar: nested split depth >= 3", ()=>{ assert(depth(state.tree)>=3); });
+  t("geometry: every node has a rect", ()=>{
+    const R=rects(state.tree,FR); assert(Object.keys(R).length===flatten(state.tree).length); });
+  t("geometry: sibling rects do not overlap", ()=>{
+    const s=nodeByID(state.tree,"s-work"), R=rects(state.tree,FR);
+    for(let i=0;i<s.children.length-1;i++)
+      assert(R[s.children[i].id].x+R[s.children[i].id].w <= R[s.children[i+1].id].x+1e-6);
+  });
+  t("commands: all 15 parse", ()=>{
+    const urls=["everything","zoom-out","zoom-in","back","forward","neighbour?dir=left",
+      "frame-window","frame-desktop","toggle-desktop","view?n=1","save-view?n=9",
+      "split-finder","arrange","float-all","settings?pane=shortcuts"];
+    assert(urls.length===15); urls.forEach(u=>parseURL(`${SPEC.scheme}://${u}`));
+  });
+  t("commands: own scheme parses", ()=>{ parseURL(`${SPEC.own_scheme}://zoom-out`); });
+  t("commands: unknown command rejected", ()=>{
+    let threw=false; try{parseURL(`${SPEC.scheme}://nope`);}catch(e){threw=true;} assert(threw); });
+  t("commands: n=10 rejected", ()=>{
+    let threw=false; try{parseURL(`${SPEC.scheme}://view?n=10`);}catch(e){threw=true;} assert(threw); });
+  t("commands: bad dir rejected", ()=>{
+    let threw=false; try{parseURL(`${SPEC.scheme}://neighbour?dir=sideways`);}catch(e){threw=true;} assert(threw); });
+  t("commands: bad pane rejected", ()=>{
+    let threw=false; try{parseURL(`${SPEC.scheme}://settings?pane=nope`);}catch(e){threw=true;} assert(threw); });
+  t("camera: zoom-out from leaf reaches parent", ()=>{
+    let c={...initialCamera(), framed:"p-editor"};
+    c=applyCamera(c,{t:"zoomOut"},state.tree,FR);
+    assert(c.framed==="s-work", c.framed); });
+  t("camera: back/forward round trip", ()=>{
+    let c=applyCamera(initialCamera(),{t:"frame",id:"p-editor"},state.tree,FR);
+    c=applyCamera(c,{t:"back"},state.tree,FR); assert(c.framed===state.tree.id, c.framed);
+    c=applyCamera(c,{t:"forward"},state.tree,FR); assert(c.framed==="p-editor"); });
+  t("camera: saveView then goToView", ()=>{
+    let c=applyCamera(initialCamera(),{t:"frame",id:"p-notes"},state.tree,FR);
+    c=applyCamera(c,{t:"saveView",n:3},state.tree,FR);
+    c=applyCamera(c,{t:"everything"},state.tree,FR);
+    c=applyCamera(c,{t:"goToView",n:3},state.tree,FR);
+    assert(c.framed==="p-notes", c.framed); });
+  t("camera: framing twice returns to root", ()=>{
+    let c=applyCamera(initialCamera(),{t:"frame",id:"p-editor"},state.tree,FR);
+    c=applyCamera(c,{t:"frame",id:"p-editor"},state.tree,FR);
+    assert(c.framed===state.tree.id, c.framed); });
+  t("camera: toggleDesktop does not move framed", ()=>{
+    const c=applyCamera(initialCamera(),{t:"toggleDesktop"},state.tree,FR);
+    assert(c.desktopHidden && c.framed===state.tree.id); });
+  t("camera: neighbour right picks a leaf to the right", ()=>{
+    const n=neighbourOf(state.tree,"p-editor","right",FR);
+    assert(n && n!=="p-editor", String(n)); });
+  t("mutation: dock grows node count and keeps invariant", ()=>{
+    const fresh=panel("p-test",["w-test"],"Test","#000");
+    const out=insertPanel(clone(state.tree),"p-editor","right",fresh);
+    assert(out && !validate(out), validate(out)||"dock failed"); });
+  t("mutation: cross-axis dock wraps target in a new split", ()=>{
+    // Global max depth need not grow: the tree already has another nested
+    // branch at the same depth. What must grow is the TARGET's own path.
+    const fresh=panel("p-test2",["w-test2"],"Test2","#000");
+    const before=pathTo(state.tree,"p-editor");
+    const out=insertPanel(clone(state.tree),"p-editor","down",fresh);
+    const after=pathTo(out,"p-editor");
+    assert(after && before && after.length===before.length+1,
+      `path ${before&&before.length} -> ${after&&after.length}`);
+    const wrap=nodeByID(out,after[after.length-2]);
+    assert(wrap && wrap.kind==="split" && wrap.axis==="y", "wrapper is not a y-split");
+    assert(wrap.children.some(c=>c.id==="p-test2"), "new panel missing from wrapper");
+    assert(!validate(out), validate(out)||"invariant broken"); });
+  t("mutation: remove collapses single-child split", ()=>{
+    const out=removeNode(clone(state.tree),"p-editor");
+    assert(out && !validate(out), validate(out)||"remove failed"); });
+  t("mutation: desktop leaf is protected", ()=>{
+    assert(removeNode(clone(state.tree),"desktop")===null); });
+  t("mutation: gap resize keeps sum 1 and min share", ()=>{
+    const a=resizeGap(clone(state.tree),"s-work",0,1,99);
+    const b=resizeGap(clone(state.tree),"s-work",0,1,-99);
+    assert(!validate(a) && !validate(b));
+    assert(nodeByID(a,"s-work").weights[1] >= MIN_SHARE-1e-9);
+    assert(nodeByID(b,"s-work").weights[0] >= MIN_SHARE-1e-9); });
+  t("spec: 15 commands / 8 panes / 47 keys", ()=>{
+    assert(SPEC.commands.length===15 && SPEC.panes.length===8 && SPEC.settings_keys.length===47); });
+
+  const pass = results.filter(r=>r[1]).length;
+  const el = $("#selftest");
+  el.dataset.result = pass===results.length ? "PASS" : "FAIL";
+  el.dataset.count = `${pass}/${results.length}`;
+  el.innerHTML = `<b class="${pass===results.length?"ok":"bad"}">${el.dataset.result} ${pass}/${results.length}</b><br>` +
+    results.filter(r=>!r[1]).map(r=>`<span class="bad">✗ ${escapeHTML(r[0])}: ${escapeHTML(r[2])}</span>`).join("<br>");
+  $("#c-selftest").className = pass===results.length ? "ok" : "bad";
+  $("#c-selftest").textContent = `${pass} / ${results.length} passed`;
+  log("CHECK", `JS self test ${pass}/${results.length} · ${el.dataset.result}`);
+  return el.dataset.result;
+}
+$("#btn-selftest").addEventListener("click", ()=>{ selfTest(); render(); });
+
+/* ── Boot ─────────────────────────────────────────────────────────────── */
+log("LAYOUT", "clean-room spec v2 · observed departure template shape");
+log("RESTORE", "6 windows, framed root · no real windows touched");
+render();
+selfTest();
+window.__SIM_SELFTEST__ = selfTest;
+</script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+{
+  "schema": "craft-anything/project/1",
+  "name": "TrellisWM clean-room study",
+  "subject": "TrellisWM 0.10.0 (build 560), app.trellisui.trelliswm",
+  "subject_path": "/Applications/TrellisWM.app",
+  "mode": "clean-room-plus-runtime-observation",
+  "created": "2026-11-09",
+  "phase": "ready",
+  "verdict": "READY — authoritative results live in checks/report.json",
+  "check_command": "/usr/bin/python3 checks/check_evidence.py --headless",
+  "method": {
+    "study": "Collect only observable evidence: public documentation, bundle metadata, shipped resources, user-visible UI strings (as terminology only), runtime logs and the app's own persisted documents on this Mac.",
+    "build": "Write an independent implementation from the derived specification. No source code, disassembly output, logos, icons, artwork or prose from the subject is copied into the implementation.",
+    "check": "Compare the derived specification against captured evidence; run unit tests; render the simulator headlessly.",
+    "ready": "Report coverage, confidence and explicit limitations."
+  },
+  "boundaries": {
+    "allowed": [
+      "reading bundle metadata (Info.plist, ReleaseSettings.json)",
+      "reading the app's own persisted layout documents under ~/Library/Application Support/TrellisWM",
+      "reading the app's own log under ~/Library/Logs",
+      "reading public documentation at trelliswm.app",
+      "listing symbol names present in the Mach-O as terminology hints"
+    ],
+    "excluded": [
+      "disassembly / decompilation / Ghidra",
+      "copying any subject source code",
+      "copying the subject's localized prose (497 UI strings were read as terminology, not reproduced)",
+      "copying AppIcon.icns, MenuBarIcon.svg, Lessons assets or any artwork",
+      "bypassing licensing, trial or activation logic",
+      "reusing the bundle identifier, URL scheme owner name or product name in shipped code"
+    ],
+    "note": "Clean room here means an independent implementation from observable behaviour, not an OS sandbox. The subject was inspected only on its owner's machine, at the owner's request."
+  },
+  "artifacts": {
+    "readme": "README.md",
+    "evidence": "capture/",
+    "evidence_ledger": "capture/evidence.md",
+    "investigation": "investigation.cany/questions.md",
+    "coverage": "investigation.cany/coverage.md",
+    "implementation": "app/",
+    "simulator": "sim/index.html",
+    "checks": "checks/",
+    "check_report": "checks/CHECKS.md",
+    "check_machine_report": "checks/report.json",
+    "render_proof": "checks/sim-render.png",
+    "inbox": "inbox/unspecified.md"
+  }
+}

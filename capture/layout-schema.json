@@ -1,0 +1,98 @@
+{
+  "derived_from": "live layout-*.json / arrangement-*.json / departures.json on this Mac",
+  "document_version": 2,
+  "grammar": {
+    "Desktop": {
+      "id": "desktop",
+      "kind": "desktop"
+    },
+    "Node": "Desktop | Panel | Split",
+    "Panel": {
+      "id": "string",
+      "kind": "panel",
+      "selected": "seat-id",
+      "tabbed": "bool?",
+      "views": [
+        "seat-id"
+      ]
+    },
+    "Split": {
+      "axis": "x|y",
+      "children": [
+        "Node"
+      ],
+      "id": "split-XXXXXX",
+      "kind": "split",
+      "weights": [
+        "Double, sums to 1"
+      ]
+    }
+  },
+  "invariants": [
+    "Exactly one node with id=='desktop' acts as the floating-window layer.",
+    "Split.children.count == Split.weights.count",
+    "sum(Split.weights) == 1.0 within floating-point tolerance",
+    "Split nodes nest recursively: this is the 'spaces inside spaces' property.",
+    "A Panel.views array with >1 element is a tab group; selected points at the visible tab.",
+    "framed stores the camera's focus node id. 'desktop' is ALSO the floating-layer leaf; in observed all-floating documents root == desktop, so 'zoomed out' and 'framed Desktop' cannot be distinguished from the data alone (see investigation.cany/questions.md Q16).",
+    "floatSizes / seats / dockSpots are keyed by a stable seat id (s-... in layout, w... in arrangement)."
+  ],
+  "node_keys_by_kind": {
+    "desktop": [
+      "id",
+      "kind"
+    ],
+    "panel": [
+      "id",
+      "kind",
+      "selected",
+      "views"
+    ],
+    "split": [
+      "axis",
+      "children",
+      "id",
+      "kind",
+      "weights"
+    ]
+  },
+  "node_kinds_observed": {
+    "desktop": 28,
+    "panel": 7,
+    "split": 5
+  },
+  "seat_keys": [
+    "appName",
+    "bundleID",
+    "document",
+    "frame",
+    "identifier",
+    "imported",
+    "number",
+    "order",
+    "pid",
+    "placement",
+    "realFrame",
+    "seen",
+    "session",
+    "tabs",
+    "titles",
+    "tokens"
+  ],
+  "top_level_keys": [
+    "doc",
+    "dockSpots",
+    "floatSizes",
+    "framed",
+    "framedLeaves",
+    "framings",
+    "mirrorDigest",
+    "owners",
+    "saltDigest",
+    "saved",
+    "seats",
+    "session",
+    "version",
+    "world"
+  ]
+}

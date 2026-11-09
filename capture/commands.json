@@ -1,0 +1,58 @@
+{
+  "source": "https://trelliswm.app/docs/ (public guide, TrellisWM 0.10.0)",
+  "captured": "2026-11-09",
+  "url_scheme": "trelliswm",
+  "url_commands": [
+    {"url": "trelliswm://everything", "name": "everything", "params": [], "action": "Show everything"},
+    {"url": "trelliswm://zoom-out", "name": "zoom-out", "params": [], "action": "Step out a level"},
+    {"url": "trelliswm://zoom-in", "name": "zoom-in", "params": [], "action": "Step in a level, toward the window you are using"},
+    {"url": "trelliswm://back", "name": "back", "params": [], "action": "Back"},
+    {"url": "trelliswm://forward", "name": "forward", "params": [], "action": "Forward"},
+    {"url": "trelliswm://neighbour?dir=left", "name": "neighbour", "params": ["dir=left|right|up|down"], "action": "The neighbouring space"},
+    {"url": "trelliswm://frame-window", "name": "frame-window", "params": [], "action": "The focused window on its own (again to go back)"},
+    {"url": "trelliswm://frame-desktop", "name": "frame-desktop", "params": [], "action": "The Desktop on its own"},
+    {"url": "trelliswm://toggle-desktop", "name": "toggle-desktop", "params": [], "action": "Hide or show the Desktop"},
+    {"url": "trelliswm://view?n=1", "name": "view", "params": ["n=1..9"], "action": "Go to a saved view"},
+    {"url": "trelliswm://save-view?n=1", "name": "save-view", "params": ["n=1..9"], "action": "Save the view"},
+    {"url": "trelliswm://split-finder", "name": "split-finder", "params": [], "action": "Split the current window with a new Finder window"},
+    {"url": "trelliswm://arrange", "name": "arrange", "params": [], "action": "Arrange all your windows"},
+    {"url": "trelliswm://float-all", "name": "float-all", "params": [], "action": "Float all your windows on the Desktop"},
+    {"url": "trelliswm://settings?pane=shortcuts", "name": "settings", "params": ["pane=general|windows|tabs|appearance|gestures|apps|shortcuts|license"], "action": "Open Settings at a pane"}
+  ],
+  "shortcuts": [
+    {"keys": "⌃⌥Space", "action": "Show everything", "command": "everything"},
+    {"keys": "⌃⌥↑ / ↓", "action": "Step out / in a level", "command": "zoom-out / zoom-in"},
+    {"keys": "⌃⌥← / →", "action": "Neighbouring space left / right", "command": "neighbour?dir=left|right"},
+    {"keys": "⌃⌥⇧↑ / ↓", "action": "Neighbouring space above / below", "command": "neighbour?dir=up|down"},
+    {"keys": "⌃⌥[ / ]", "action": "Back / forward", "command": "back / forward"},
+    {"keys": "⌃⌥Return", "action": "The focused window on its own", "command": "frame-window"},
+    {"keys": "⌃⌥D", "action": "Hide or show the Desktop", "command": "toggle-desktop"},
+    {"keys": "⌃⌥N", "action": "Split the current window with a new Finder window", "command": "split-finder"},
+    {"keys": "⌃⌥⇧1–9", "action": "Save the view", "command": "save-view?n="},
+    {"keys": "⌃⌥1–9", "action": "Go to a saved view", "command": "view?n="},
+    {"keys": "⌘⇧ drag", "action": "Zoom to a rectangle", "command": null},
+    {"keys": "⌥ pinch", "action": "Zoom, anywhere", "command": null}
+  ],
+  "other_interactions": [
+    "Double-click a window title bar: frame that window; again to go back",
+    "Double-click the Desktop: frame the Desktop",
+    "Drag a window title bar to a screen/window edge: dock it, neighbours make room",
+    "Drag the gap between docked windows: resize",
+    "Drop a window on the middle of another and pause: create a tab group",
+    "Click a window green button: toggle docked/floating (⌥-click keeps macOS zoom)",
+    "⌘⇧-drag a rectangle: zoom to fit; Esc cancels",
+    "Quit: every window returns to a visible position"
+  ],
+  "settings_panes": ["general", "windows", "tabs", "appearance", "gestures", "apps", "shortcuts", "license"],
+  "plans": {
+    "trial": "14 days of everything",
+    "free": "docking, floating, zooming; up to 5 docked windows per macOS desktop",
+    "pro": "unlimited docked windows, tab groups, saved views, commands by URL"
+  },
+  "permissions": {
+    "required": "Accessibility (move/resize windows via AXUIElement)",
+    "optional": "Screen Recording (still pictures of window contents; nothing recorded)",
+    "note": "Screen Recording takes effect after the app reopens."
+  },
+  "platform": "Apple silicon (arm64), macOS 14 Sonoma or newer"
+}

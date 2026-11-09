@@ -1,0 +1,19 @@
+# SwiftPM build output (kept locally so `swift test` is instant, never committed)
+.build/
+.swiftpm/
+DerivedData/
+*.xcodeproj
+
+# Python
+__pycache__/
+*.py[cod]
+
+# macOS / editor
+.DS_Store
+.AppleDouble
+*.swp
+*~
+
+# Headless-browser scratch profiles and transient logs
+*chrome-profile*/
+*.log
