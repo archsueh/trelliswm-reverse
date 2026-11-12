@@ -6,6 +6,7 @@
 
 **结论：READY · 14/14 Check 通过 · Swift 18/18 单测 · JS 24/24 自检。**
 这不是可替代原品的 app，是一份带证据台账、置信度和明确局限的规格验证工程。
+**已打包为可双击的 macOS 原生 `.app` + DMG / pkg 安装包**（见 [第 8 节](#8-安装包本机可见)），但性质不变：是可视化工作台，不是窗口管理器。
 
 ---
 
@@ -42,8 +43,14 @@ trelliswm-reverse/
 │   ├── Package.swift
 │   ├── Sources/TrellisCore/       LayoutNode / LayoutEngine / Camera / Commands / Settings / LayoutDocument
 │   ├── Sources/TrellisApp/        AppKit + AX 窗口系统封装、菜单栏、probe 入口
+│   ├── Sources/TrellisStudio/     StudioMain.swift：AppKit 可视化工作台（.app 主程序）
 │   └── Tests/TrellisCoreTests/    18 个 XCTest
 ├── sim/index.html                 Build：JS 独立实现 + 交互模拟器（无需任何权限）
+├── installer/                     Ready：一键打包可安装的 .app / DMG / pkg
+│   ├── build_app.sh               release 编译 → 图标 → 组装 → 签名 → DMG + pkg
+│   ├── make_icon.py               零依赖生成 AppIcon.iconset（纯代码绘制）
+│   ├── Info.plist                 独立 bundle id：app.trellisreverse.studio
+│   └── INSTALL.md                 安装说明（随包分发）
 ├── checks/
 │   ├── collect_evidence.py        只读重采证据
 │   ├── check_evidence.py          Check：三方注册表比对 + 实跑单测 + 无头渲染
@@ -84,6 +91,8 @@ Split   := { kind:"split", id, axis:"x"|"y", children:[Node], weights:[Double] }
 | 静态校验 | `python3 checks/check_evidence.py --headless` | **14/14 PASS · READY** |
 | 无头渲染 | Chrome `--headless=new --dump-dom --screenshot` | `selftest PASS 24/24`，6 个窗口节点渲染 |
 | 真实 API / 权限 | — | **不需要**。模拟器是纯前端；App 骨架只对 AX 做只读封装 |
+| 原生安装包 | `installer/build_app.sh --install` | `/Applications/Trellis Reverse.app` 启动后窗口 1282×842，Swift 18/18、Check 14/14 回归通过 |
+| 包完整性 | `codesign --verify --deep --strict` | ad-hoc 签名有效；DMG 挂载含 app / Applications 快捷方式 / 源码 zip / 校验信息 |
 
 `sim/index.html` 直接双击即可用：点窗口 frame（再点退回）、拖标题栏到某条边 dock、拖间隙改权重、15 条命令按钮、URL 输入框、`⌃⌥` 快捷键、back/forward、saved views 1–9、切换「显示空间边界」看递归层级、载入真实模板权重看窄 tile 退化成 app 图标。
 
@@ -132,8 +141,34 @@ Split   := { kind:"split", id, axis:"x"|"y", children:[Node], weights:[Double] }
 
 ---
 
-## 7. 下一步（都由你点头才动）
+## 7. 已完成的安装包，以及仍未做的事
 
-1. 把 `app/` 做成真正可运行的 `.app`：接 AX 写操作（需要 Accessibility 授权）、静态截图管线、Sparkle 之外的分发与签名。
+**已完成**（2026-11-12）：`app/Sources/TrellisStudio/` 原生 AppKit 工作台 → 组装 `.app` → ad-hoc 签名 → DMG / pkg → 装到 `/Applications`。详见第 8 节。
+
+**仍未做，也不假装做了**：
+
+1. 接 AX **写操作**（需要 Accessibility 授权）、静态截图管线（ScreenCaptureKit）、Developer ID 签名与公证（notarization）。目前是 ad-hoc 签名，Gatekeeper 在跨机器分发时会提示。
 2. 提高 Q13 / Q16 置信度：在你自己机器上做成对行为采样（dock 前后各导一次 `layout-*.json` 比对树差异），不需要读内部代码。
 3. 把这套 Study → Build → Check 流程固化成可复用 skill，用于下一个 app 的规格逆推。
+
+---
+
+## 8. 安装包（本机可见）
+
+```
+/Applications/Trellis Reverse.app          已安装，可双击
+~/Downloads/TrellisReverse-1.0.0.dmg      可拖拽安装（含 Applications 快捷方式）
+~/Downloads/TrellisReverse-1.0.0.pkg      双击安装器
+~/Downloads/TrellisReverse-1.0.0.dmg.sha256
+~/Downloads/TrellisReverse-校验信息.txt
+```
+
+`Trellis Reverse.app/Contents/` 里含：`MacOS/TrellisStudio`（主程序）、`MacOS/trellis-probe`（CLI）、`Resources/Simulator/index.html`（自包含交互模拟器）、`Resources/Source/`（完整工程与证据）、`Resources/Docs/`（README / NOTICE）、`AppIcon.icns`。
+
+**bundle id 是自己的 `app.trellisreverse.studio`**，不注册 `trelliswm://`、不冒用原品 `app.trellisui.trelliswm`。图标由 `make_icon.py` 纯代码绘制，未使用原品任何素材。
+
+复现构建：`cd installer && ./build_app.sh --install`。产物在 `.dist/`（已 gitignore）。**签名是 ad-hoc**：本机拖拽可用，跨机器分发需右键「打开」或 `xattr -d com.apple.quarantine`；详见 `installer/INSTALL.md`。
+
+工作台启动后展示递归 split 树，点任意窗口块 frame（再点退回），顶部按钮 / 「命令」菜单覆盖 15 条命令，URL 输入框可直接敲 `trellisprobe://zoom-in`，「文件」菜单可打开内嵌模拟器、在 Finder 显示源码、导出布局 JSON。动效 0.46s 取观测到的 SETTLED 中位数。
+
+**画布 tile 间隙 6pt 是显示偏好，不是观测事实**：采集到的原品发布默认 `Settings.release.gap = 12` 未被改动，`trellis-probe`、JS 模拟器与 Check 仍按 12pt 建模；状态栏同时标 `gap 6pt (view) / 12pt (subject)`，避免把渲染偏好误读成规格。

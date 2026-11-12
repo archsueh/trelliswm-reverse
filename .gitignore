@@ -4,6 +4,9 @@
 DerivedData/
 *.xcodeproj
 
+# installer/build_app.sh output: .app bundle, DMG, pkg, iconset
+.dist/
+
 # Python
 __pycache__/
 *.py[cod]
