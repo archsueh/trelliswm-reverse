@@ -153,7 +153,7 @@ Split   := { kind:"split", id, axis:"x"|"y", children:[Node], weights:[Double] }
 
 ---
 
-## 8. 安装包（本机可见）
+## 8. 安装包（本机 + 远端 Release）
 
 ```
 /Applications/Trellis Reverse.app          已安装，可双击
@@ -162,6 +162,18 @@ Split   := { kind:"split", id, axis:"x"|"y", children:[Node], weights:[Double] }
 ~/Downloads/TrellisReverse-1.0.0.dmg.sha256
 ~/Downloads/TrellisReverse-校验信息.txt
 ```
+
+**远端可下载**：[v1.0.0 Release](https://github.com/archsueh/trelliswm-reverse/releases/tag/v1.0.0)，tag 指向 `6ef11cd`。5 个资产：
+
+| 资产 | 说明 |
+|---|---|
+| `TrellisReverse-1.0.0.dmg` | 拖拽安装，SHA-256 `aacc6e4a25d…` |
+| `TrellisReverse-1.0.0.pkg` | 安装器，SHA-256 `5768148362…` |
+| `TrellisReverse-1.0.0.dmg.sha256` | DMG 校验文件 |
+| `TrellisReverse-checksums.txt` | 组件校验清单 |
+| `TrellisReverse-preview.png` | 窗口预览图 |
+
+Release 资产统一用 ASCII 文件名：中文名经 `gh release upload` 上传后会被剥成 `TrellisReverse-.png` 之类，故预览图与校验清单改用英文名。远端资产的 `digest` 已与本地逐一比对，DMG 还实际下载回验，SHA-256 一致。
 
 `Trellis Reverse.app/Contents/` 里含：`MacOS/TrellisStudio`（主程序）、`MacOS/trellis-probe`（CLI）、`Resources/Simulator/index.html`（自包含交互模拟器）、`Resources/Source/`（完整工程与证据）、`Resources/Docs/`（README / NOTICE）、`AppIcon.icns`。
 
