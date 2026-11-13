@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>zh_CN</string>
+	<key>CFBundleDisplayName</key>
+	<string>Trellis WM</string>
+	<key>CFBundleExecutable</key>
+	<string>TrellisWM</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon.icns</string>
+	<key>CFBundleIdentifier</key>
+	<string>app.trellisreverse.wm</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>Trellis WM</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSAccessibilityUsageDescription</key>
+	<string>Trellis WM uses Accessibility to move and resize your application windows when you enable tiling. It does not read document contents and will not move any window until Accessibility is granted and tiling is turned on.</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Trellis WM uses Accessibility to move and resize your application windows when you enable tiling. It does not read document contents and will not move any window until Accessibility is granted and tiling is turned on.</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Independent clean-room implementation. NOT affiliated with or endorsed by TrellisWM. No subject code, icons or resources were copied.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+</dict>
+</plist>

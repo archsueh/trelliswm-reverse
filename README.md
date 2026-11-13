@@ -4,9 +4,14 @@
 
 以 `storytold/craft-anything` 的 **Study → Build → Check → Ready** 方法，从 `/Applications/TrellisWM.app` 0.10.0 (build 560) 的**可见证据**逆推规格，并独立写出一套可编译、可单测、可交互的实现。
 
-**结论：READY · 14/14 Check 通过 · Swift 18/18 单测 · JS 24/24 自检。**
-这不是可替代原品的 app，是一份带证据台账、置信度和明确局限的规格验证工程。
-**已打包为可双击的 macOS 原生 `.app` + DMG / pkg 安装包**（见 [第 8 节](#8-安装包本机可见)），但性质不变：是可视化工作台，不是窗口管理器。
+仓库里现在有两个独立的 app，bundle id 都不是原品的 `app.trellisui.trelliswm`：
+
+| App | bundle id | 是什么 |
+|---|---|---|
+| **Trellis WM** 0.1.0 | `app.trellisreverse.wm` | 菜单栏窗口管理器（v0.1：主屏标准窗口平铺）。见下方「Trellis WM」一节和 [installer/INSTALL-WM.md](installer/INSTALL-WM.md) |
+| **Trellis Reverse** 1.0.0 | `app.trellisreverse.studio` | 规格可视化工作台，仍然不移动真实窗口。见 [第 8 节](#8-安装包本机可见) |
+
+规格研究本身（14/14 Check、JS 24/24）没有被丢掉。Swift 单测在原 18 个之外增加了平铺映射 / 过滤的纯逻辑测试。这仍不是原品 TrellisWM 的替代或复刻：没有相机 zoom、tab strip、总览、多显示器或 Space。
 
 ---
 
@@ -42,15 +47,20 @@ trelliswm-reverse/
 ├── app/                           Build：独立 Swift 实现
 │   ├── Package.swift
 │   ├── Sources/TrellisCore/       LayoutNode / LayoutEngine / Camera / Commands / Settings / LayoutDocument
-│   ├── Sources/TrellisApp/        AppKit + AX 窗口系统封装、菜单栏、probe 入口
+│   ├── Sources/TrellisApp/        只读 probe 入口与菜单栏骨架
+│   ├── Sources/TrellisAX/         Accessibility 桥（只读枚举 + 受信任后的 setFrame）
 │   ├── Sources/TrellisStudio/     StudioMain.swift：AppKit 可视化工作台（.app 主程序）
-│   └── Tests/TrellisCoreTests/    18 个 XCTest
+│   ├── Sources/TrellisWM/         菜单栏平铺代理（Trellis WM.app 主程序）
+│   └── Tests/TrellisCoreTests/    原 18 个规格测试 + 平铺映射 / 过滤测试
 ├── sim/index.html                 Build：JS 独立实现 + 交互模拟器（无需任何权限）
 ├── installer/                     Ready：一键打包可安装的 .app / DMG / pkg
-│   ├── build_app.sh               release 编译 → 图标 → 组装 → 签名 → DMG + pkg
-│   ├── make_icon.py               零依赖生成 AppIcon.iconset（纯代码绘制）
-│   ├── Info.plist                 独立 bundle id：app.trellisreverse.studio
-│   └── INSTALL.md                 安装说明（随包分发）
+│   ├── build_app.sh               工作台：release 编译 → 图标 → 组装 → 签名 → DMG + pkg（`--wm` 转给 build_wm.sh）
+│   ├── build_wm.sh                窗口管理器：编译 TrellisWM → 组装 Trellis WM.app → ad-hoc 签名
+│   ├── make_icon.py               零依赖生成 AppIcon.iconset（纯代码绘制；`--style wm` 为深色变体）
+│   ├── Info.plist                 工作台 bundle id：app.trellisreverse.studio
+│   ├── Info-WM.plist              窗口管理器 bundle id：app.trellisreverse.wm（LSUIElement）
+│   ├── INSTALL.md                 工作台安装说明
+│   └── INSTALL-WM.md              窗口管理器安装、授权与默认快捷键
 ├── checks/
 │   ├── collect_evidence.py        只读重采证据
 │   ├── check_evidence.py          Check：三方注册表比对 + 实跑单测 + 无头渲染
@@ -145,11 +155,14 @@ Split   := { kind:"split", id, axis:"x"|"y", children:[Node], weights:[Double] }
 
 **已完成**（2026-11-12）：`app/Sources/TrellisStudio/` 原生 AppKit 工作台 → 组装 `.app` → ad-hoc 签名 → DMG / pkg → 装到 `/Applications`。详见第 8 节。
 
+**已完成**（2026-11-13）：`app/Sources/TrellisWM/` 菜单栏窗口管理器 v0.1 → 组装 `Trellis WM.app` → ad-hoc 签名 → 可装到 `/Applications/Trellis WM.app`。接上了 Accessibility 写操作、AXObserver 事件循环、全局快捷键。详见下方「Trellis WM」一节。
+
 **仍未做，也不假装做了**：
 
-1. 接 AX **写操作**（需要 Accessibility 授权）、静态截图管线（ScreenCaptureKit）、Developer ID 签名与公证（notarization）。目前是 ad-hoc 签名，Gatekeeper 在跨机器分发时会提示。
+1. ScreenCaptureKit 静态截图 / 总览、tab strip、gap handle、多显示器与 Space、Developer ID 签名与公证（notarization）。目前两个 app 都是 ad-hoc 签名，Gatekeeper 在跨机器分发时会提示。
 2. 提高 Q13 / Q16 置信度：在你自己机器上做成对行为采样（dock 前后各导一次 `layout-*.json` 比对树差异），不需要读内部代码。
 3. 把这套 Study → Build → Check 流程固化成可复用 skill，用于下一个 app 的规格逆推。
+4. 原品里的相机 zoom、saved views、URL scheme 命令尚未接到真实窗口（v0.1 只覆盖平铺、焦点、交换、比例和开关）。
 
 ---
 
@@ -184,3 +197,36 @@ Release 资产统一用 ASCII 文件名：中文名经 `gh release upload` 上�
 工作台启动后展示递归 split 树，点任意窗口块 frame（再点退回），顶部按钮 / 「命令」菜单覆盖 15 条命令，URL 输入框可直接敲 `trellisprobe://zoom-in`，「文件」菜单可打开内嵌模拟器、在 Finder 显示源码、导出布局 JSON。动效 0.46s 取观测到的 SETTLED 中位数。
 
 **画布 tile 间隙 6pt 是显示偏好，不是观测事实**：采集到的原品发布默认 `Settings.release.gap = 12` 未被改动，`trellis-probe`、JS 模拟器与 Check 仍按 12pt 建模；状态栏同时标 `gap 6pt (view) / 12pt (subject)`，避免把渲染偏好误读成规格。
+
+---
+
+## 9. Trellis WM（v0.1 窗口管理器）
+
+这是把 `TrellisCore` 接到真实窗口上的菜单栏代理，不是工作台的改名。
+
+**现在能做的：**
+
+- 菜单栏常驻（`LSUIElement`），不占用 Dock。
+- 未获得辅助功能授权时，只显示权限状态和「Grant Accessibility…」，**不会移动任何窗口**。默认平铺为关闭；需要你在菜单里打开，或按 `⌃⌥⌘T`。
+- 若检测到原品 TrellisWM（`app.trellisui.trelliswm`）仍在运行，拒绝开启平铺，避免两个管理器抢窗口。
+- 授权且开启平铺后：枚举**主屏**（Cocoa 原点 `(0, 0)` 的那块，不是 `NSScreen.main`）上常规应用的 `AXStandardWindow`，跳过最小化、全屏、自己的窗口和原品的窗口；按 12pt 间隙（`Settings.release.gap`）和 `visibleFrame`（避开菜单栏 / Dock）用 Accessibility 写 position / size。写入后会回读实际 frame；若 app 钳制了最小尺寸，按钳制结果重排，保持间隙、避免重叠。
+- 开启平铺时会记下每个窗口的原位；关闭平铺或退出 app 时还原（已关闭的窗口跳过）。
+- 每个应用一个 `AXObserver`，加上 `NSWorkspace` 的启动 / 退出通知；窗口创建、销毁、最小化、还原后会去抖并重新平铺。写入窗口期间到达的事件会在写入结束后补一次重排，而不是被丢掉。
+- 全局快捷键（Carbon `RegisterEventHotKey`，不需要「输入监控」权限）：
+
+| 动作 | 快捷键 |
+|---|---|
+| 焦点下一个 / 上一个 | `⌃⌥⌘J` / `⌃⌥⌘K` |
+| 与下一个 / 上一个交换 | `⌃⌥⌘⇧J` / `⌃⌥⌘⇧K` |
+| 切换分屏方向 | `⌃⌥⌘O` |
+| 放大 / 缩小格子 | `⌃⌥⌘=` / `⌃⌥⌘-` |
+| 立刻重新平铺 | `⌃⌥⌘R` |
+| 打开 / 关闭平铺 | `⌃⌥⌘T` |
+
+**你需要做的：**
+
+1. 退出原品 `/Applications/TrellisWM.app`。
+2. `cd installer && ./build_wm.sh --install`（若尚未安装），打开「Trellis WM」。
+3. 在「系统设置 → 隐私与安全性 → 辅助功能」中勾选 Trellis WM；然后在菜单里 Enable Tiling。
+
+**v0.1 不做：** ScreenCaptureKit 总览、tab strip、多显示器 / Spaces、公证。工作台 `Trellis Reverse.app` 保持原样，不会变成窗口管理器。

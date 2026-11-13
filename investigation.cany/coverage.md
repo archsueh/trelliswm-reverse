@@ -29,7 +29,7 @@
 | 47 发布默认键 | S5 | `Settings` 47 属性 | SPEC.settings_keys | 单测（Mirror keyCount）+ C04 | 高 |
 | 12 行快捷键 | S2 逐字 | —（由命令层驱动） | SPEC.shortcuts + `keydown` | C05 | 高 |
 | 460ms 典型 motion | S1 + S8 中位数 | — | CSS transition 460ms | C08（中位数 / 主模态） | 高（已纠正口径） |
-| AX 移动窗口 | S2 权限 + S9 + S8 事件 | `WindowSystem.swift` 只读封装 | 不涉及 | `trellis-probe --live` 实跑 | 高（机制）/ 未实现写操作 |
+| AX 移动窗口 | S2 权限 + S9 + S8 事件 | `TrellisAX` 枚举 + `setFrame`；`TrellisWM` 在授权后写窗口 | 不涉及 | `trellis-probe --live` 只读；WM v0.1 写路径见 README §9 | 高（机制）/ v0.1 已接写操作 |
 | 静态截图图层 | S1 + S8 PICTURES + S9 | 不实现 | 不实现 | — | 高（结论）/ 明确排除 |
 | seat 指纹哈希 / 匹配权重 | S7（字段可见） | `SeatMatcher` 协议 + `SimpleSeatMatcher` | 不涉及 | 无 | **未知，协议占位** |
 | 许可 / 激活 | — | 不实现 | 不实现 | — | **不调查** |
