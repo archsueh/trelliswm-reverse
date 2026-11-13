@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import TrellisAX
 import TrellisCore
 
 /// Clean-room probe. Default mode is a dry run: it computes layout geometry and

@@ -100,8 +100,39 @@ SIZES = {
 }
 
 
+def apply_style(style):
+    """wm style is a darker agent-looking variant so the two apps differ."""
+    global PAPER, EDGE, TILES
+    if style != "wm":
+        return
+    PAPER = (32, 40, 54, 255)
+    EDGE = (210, 218, 228, 255)
+    TILES = [
+        (120, 168, 214, 255),
+        (110, 186, 164, 255),
+        (214, 168, 110, 255),
+        (176, 154, 214, 255),
+        (80, 90, 104, 255),
+    ]
+
+
 def main():
-    outdir = sys.argv[1] if len(sys.argv) > 1 else "AppIcon.iconset"
+    args = [a for a in sys.argv[1:] if a]
+    style = "studio"
+    outdir = "AppIcon.iconset"
+    i = 0
+    while i < len(args):
+        if args[i] == "--style" and i + 1 < len(args):
+            style = args[i + 1]
+            i += 2
+            continue
+        if args[i].startswith("--style="):
+            style = args[i].split("=", 1)[1]
+            i += 1
+            continue
+        outdir = args[i]
+        i += 1
+    apply_style(style)
     # The WorkBuddy PYTHONPATH shim rejects exist_ok=True with a spurious EEXIST.
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
@@ -110,7 +141,7 @@ def main():
         if size not in cache:
             cache[size] = render(size)
         write_png(os.path.join(outdir, name), size, cache[size])
-    print("iconset: %d files in %s" % (len(SIZES), outdir))
+    print("iconset: %d files in %s (style=%s)" % (len(SIZES), outdir, style))
 
 
 if __name__ == "__main__":

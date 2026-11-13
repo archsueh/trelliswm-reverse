@@ -2,7 +2,13 @@
 # Build Trellis Reverse.app -> DMG + pkg, optionally install to /Applications.
 # All system tools are called by absolute path: WorkBuddy proxies a set of basic
 # commands to toybox, whose grep/sed/find behaviour differs from BSD.
+# The real window-manager app is built separately: ./build_wm.sh [--install]
+# (or pass --wm / --wm-only through this script).
 set -euo pipefail
+
+if [ "${1:-}" = "--wm" ] || [ "${1:-}" = "--wm-only" ]; then
+    exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/build_wm.sh" "${2:-}"
+fi
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST="$ROOT/.dist"

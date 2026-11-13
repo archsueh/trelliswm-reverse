@@ -27,6 +27,8 @@ Craft Anything 的 Ready 阶段要求把 limitations 显式留下，而不是用
 - 复用产品名、bundle ID `app.trellisui.trelliswm` 或 URL scheme 的归属标识作为本实现的注册值。
 - 触碰正在运行的 TrellisWM 的窗口；`trellis-probe --live` 只做 AX 只读枚举。
 
-## D. 若要把 `app/` 推成真正可运行的 .app，缺的部分
+## D. 把 `app/` 推成真正可运行的窗口管理器
 
-AX 写操作（position / size，需要 Accessibility 授权）、`AXObserver` 事件循环、ScreenCaptureKit 静态截图图层、tab strip / gap handle / overview 的自绘 `NSWindow`、多显示器与 Space 绑定、签名与公证、Sparkle 之外的更新策略。这些是**工程实现缺口**，不是规格未知项；是否推进由用户决定。
+**v0.1 已做**（2026-11-13）：独立菜单栏代理 `Trellis WM.app`（bundle id `app.trellisreverse.wm`，`LSUIElement`）；Accessibility 授权检测与引导；主屏 `AXStandardWindow` 枚举与过滤；把窗口映射进 `TrellisCore` 布局并 `setFrame`（12pt 间隙 + `visibleFrame`）；每应用 `AXObserver` + `NSWorkspace` 启动/退出通知（去抖重排）；Carbon 全局快捷键（焦点、交换、分屏方向、比例、重排、开关平铺）；菜单开关 / 立刻重排 / 权限状态 / 退出。未授权或原品 TrellisWM 仍在运行时不会移动窗口。构建见 `installer/build_wm.sh`。
+
+**仍缺，列为后续：** ScreenCaptureKit 静态截图 / 总览、tab strip / gap handle 的自绘 `NSWindow`、多显示器与 Space 绑定、Developer ID 签名与公证、Sparkle 之外的更新策略、把原品相机 / saved views / URL 命令接到真实窗口。这些仍是工程实现缺口，不是规格未知项。
