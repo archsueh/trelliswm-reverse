@@ -209,8 +209,9 @@ Release 资产统一用 ASCII 文件名：中文名经 `gh release upload` 上�
 - 菜单栏常驻（`LSUIElement`），不占用 Dock。
 - 未获得辅助功能授权时，只显示权限状态和「Grant Accessibility…」，**不会移动任何窗口**。默认平铺为关闭；需要你在菜单里打开，或按 `⌃⌥⌘T`。
 - 若检测到原品 TrellisWM（`app.trellisui.trelliswm`）仍在运行，拒绝开启平铺，避免两个管理器抢窗口。
-- 授权且开启平铺后：枚举主屏上常规应用的 `AXStandardWindow`，跳过最小化、全屏、自己的窗口和原品的窗口；按 12pt 间隙（`Settings.release.gap`）和 `visibleFrame`（避开菜单栏 / Dock）用 Accessibility 写 position / size。
-- 每个应用一个 `AXObserver`，加上 `NSWorkspace` 的启动 / 退出通知；窗口创建、销毁、最小化、还原后会去抖并重新平铺。
+- 授权且开启平铺后：枚举**主屏**（Cocoa 原点 `(0, 0)` 的那块，不是 `NSScreen.main`）上常规应用的 `AXStandardWindow`，跳过最小化、全屏、自己的窗口和原品的窗口；按 12pt 间隙（`Settings.release.gap`）和 `visibleFrame`（避开菜单栏 / Dock）用 Accessibility 写 position / size。写入后会回读实际 frame；若 app 钳制了最小尺寸，按钳制结果重排，保持间隙、避免重叠。
+- 开启平铺时会记下每个窗口的原位；关闭平铺或退出 app 时还原（已关闭的窗口跳过）。
+- 每个应用一个 `AXObserver`，加上 `NSWorkspace` 的启动 / 退出通知；窗口创建、销毁、最小化、还原后会去抖并重新平铺。写入窗口期间到达的事件会在写入结束后补一次重排，而不是被丢掉。
 - 全局快捷键（Carbon `RegisterEventHotKey`，不需要「输入监控」权限）：
 
 | 动作 | 快捷键 |

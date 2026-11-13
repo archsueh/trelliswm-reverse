@@ -9,7 +9,19 @@ final class ObserverLoop: NSObject {
     static weak var current: ObserverLoop?
 
     var onChange: (() -> Void)?
-    var isApplying = false
+
+    /// While frames are being written, incoming AX events are not dropped:
+    /// they set `pendingWhileApplying` and flush into a retile once
+    /// `isApplying` becomes false.
+    var isApplying = false {
+        didSet {
+            if oldValue && !isApplying && pendingWhileApplying {
+                pendingWhileApplying = false
+                schedule()
+            }
+        }
+    }
+    private var pendingWhileApplying = false
 
     private var observers: [Int32: AXObserver] = [:]
     private var debounceWork: DispatchWorkItem?
@@ -60,7 +72,10 @@ final class ObserverLoop: NSObject {
     }
 
     func schedule() {
-        if isApplying { return }
+        if isApplying {
+            pendingWhileApplying = true
+            return
+        }
         debounceWork?.cancel()
         let work = DispatchWorkItem { [weak self] in
             self?.onChange?()

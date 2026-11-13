@@ -1,5 +1,18 @@
 import AppKit
 
+@MainActor
+final class WMAppDelegate: NSObject, NSApplicationDelegate {
+    let agent: WMAgent
+
+    init(agent: WMAgent) {
+        self.agent = agent
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        agent.shutdown()
+    }
+}
+
 @main
 enum TrellisWMMain {
     @MainActor
@@ -9,6 +22,8 @@ enum TrellisWMMain {
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
         let agent = WMAgent(verifyLaunch: verify)
+        let delegate = WMAppDelegate(agent: agent)
+        app.delegate = delegate
         agent.start()
         if verify {
             // Stay up briefly so the menu-bar item is visible, then quit.

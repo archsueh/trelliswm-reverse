@@ -67,17 +67,25 @@ enum WMHotkey: UInt32, CaseIterable {
     }
 }
 
+struct HotkeyReport {
+    var registered: [String] = []
+    var failures: [[String: Any]] = []
+    var allSucceeded: Bool { failures.isEmpty && registered.count == WMHotkey.allCases.count }
+}
+
 @MainActor
 final class HotkeyCenter {
     static let shared = HotkeyCenter()
 
     var onHotkey: ((WMHotkey) -> Void)?
+    private(set) var lastReport = HotkeyReport()
     private var refs: [EventHotKeyRef?] = []
     private var installed = false
 
     private static let signature = OSType(0x5452574D) // 'TRWM'
 
-    func register() {
+    @discardableResult
+    func register() -> HotkeyReport {
         if !installed {
             var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
                                           eventKind: UInt32(kEventHotKeyPressed))
@@ -90,6 +98,7 @@ final class HotkeyCenter {
             installed = true
         }
         unregister()
+        var report = HotkeyReport()
         for key in WMHotkey.allCases {
             var ref: EventHotKeyRef?
             let ident = EventHotKeyID(signature: Self.signature, id: key.rawValue)
@@ -97,8 +106,17 @@ final class HotkeyCenter {
                                              GetApplicationEventTarget(), 0, &ref)
             if status == noErr {
                 refs.append(ref)
+                report.registered.append(key.binding)
+            } else {
+                report.failures.append([
+                    "hotkey": key.binding,
+                    "name": key.menuLabel,
+                    "status": Int(status),
+                ])
             }
         }
+        lastReport = report
+        return report
     }
 
     func unregister() {

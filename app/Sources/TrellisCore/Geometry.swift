@@ -23,4 +23,22 @@ extension Rect {
     public func contains(x px: Double, y py: Double) -> Bool {
         px >= x && px <= maxX && py >= y && py <= maxY
     }
+
+    /// Cocoa-space frames of attached screens. The primary screen is the
+    /// one whose origin is `(0, 0)`; `primaryMaxY` is that screen's top
+    /// edge in Cocoa coordinates and is the value used to flip *any*
+    /// screen into AX space. Do not use another screen's `maxY`, even if
+    /// it is taller or listed first.
+    public static func primaryMaxY(cocoaScreens: [Rect]) -> Double? {
+        guard !cocoaScreens.isEmpty else { return nil }
+        let primary = cocoaScreens.first(where: { abs($0.x) < 1e-9 && abs($0.y) < 1e-9 }) ?? cocoaScreens[0]
+        return primary.maxY
+    }
+
+    public func almostEqual(_ other: Rect, tolerance: Double = 2) -> Bool {
+        abs(x - other.x) <= tolerance
+            && abs(y - other.y) <= tolerance
+            && abs(w - other.w) <= tolerance
+            && abs(h - other.h) <= tolerance
+    }
 }

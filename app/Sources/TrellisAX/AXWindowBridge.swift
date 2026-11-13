@@ -70,17 +70,31 @@ public final class AXWindowBridge {
         return windows
     }
 
-    public func setFrame(_ rect: Rect, of element: AXUIElement) -> Bool {
+    /// Set a window frame and return the actual frame after the write.
+    /// Apps may clamp the size (minimum width / height); the caller must
+    /// read this return value rather than assume the request stuck.
+    ///
+    /// Refuses the write and returns `nil` when the process is not trusted,
+    /// as promised by `assertTrusted()`.
+    ///
+    /// Order is size, then position, then size again — the usual AX idiom.
+    /// Setting position first lets a subsequent size clamp walk the window
+    /// and is a common source of overlap.
+    @discardableResult
+    public func setFrame(_ rect: Rect, of element: AXUIElement) -> Rect? {
+        do {
+            try assertTrusted()
+        } catch {
+            return nil
+        }
         var point = CGPoint(x: rect.x, y: rect.y)
         var size = CGSize(width: max(1, rect.w), height: max(1, rect.h))
         guard let position = AXValueCreate(.cgPoint, &point),
-              let extent = AXValueCreate(.cgSize, &size) else { return false }
-        // Position then size, then position again — some apps clamp the first
-        // size pass and need a second position to land in the tile.
-        let a = AXUIElementSetAttributeValue(element, kAXPositionAttribute as CFString, position)
-        let b = AXUIElementSetAttributeValue(element, kAXSizeAttribute as CFString, extent)
+              let extent = AXValueCreate(.cgSize, &size) else { return nil }
+        _ = AXUIElementSetAttributeValue(element, kAXSizeAttribute as CFString, extent)
         _ = AXUIElementSetAttributeValue(element, kAXPositionAttribute as CFString, position)
-        return a == .success && b == .success
+        _ = AXUIElementSetAttributeValue(element, kAXSizeAttribute as CFString, extent)
+        return frame(of: element)
     }
 
     /// Guard for write paths. Never prompts.
@@ -127,6 +141,11 @@ public final class AXWindowBridge {
     }
 
     public func raiseAndFocus(_ element: AXUIElement, pid: Int32) {
+        do {
+            try assertTrusted()
+        } catch {
+            return
+        }
         AXUIElementPerformAction(element, kAXRaiseAction as CFString)
         AXUIElementSetAttributeValue(element, kAXMainAttribute as CFString, kCFBooleanTrue)
         AXUIElementSetAttributeValue(element, kAXFocusedAttribute as CFString, kCFBooleanTrue)

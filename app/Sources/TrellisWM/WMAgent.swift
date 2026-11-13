@@ -17,6 +17,10 @@ final class WMAgent: NSObject {
     private var live: [String: AXWindowBridge.LiveWindow] = [:]
     private var tilingEnabled: Bool
     private let defaultsKey = "tilingEnabled"
+    /// Frames captured when tiling was turned on, keyed by stable window id.
+    /// Restored on disable and on quit; entries for windows that have since
+    /// closed are skipped.
+    private var preTileFrames: [String: Rect] = [:]
 
     init(verifyLaunch: Bool) {
         self.verifyLaunch = verifyLaunch
@@ -39,13 +43,25 @@ final class WMAgent: NSObject {
         observers.onChange = { [weak self] in self?.retile(apply: true) }
         observers.start()
 
-        retile(apply: false)
+        if canTile {
+            refreshLive(apply: false)
+            snapshotPreTileFrames()
+            retile(apply: true)
+        } else {
+            retile(apply: false)
+        }
         refreshMenu()
         writeLaunchReport()
         log.line("started trusted=\(bridge.isTrusted) tiling=\(tilingEnabled) originalWM=\(AppKitGlue.originalTrellisWMRunning) verify=\(verifyLaunch)")
     }
 
     func shutdown() {
+        if tilingEnabled {
+            restorePreTileFrames()
+            tilingEnabled = false
+            // Preference is left as the user last set it; frames are restored
+            // so the desktop is not left in a tiled state after quit.
+        }
         HotkeyCenter.shared.unregister()
         observers.stop()
     }
@@ -70,6 +86,12 @@ final class WMAgent: NSObject {
     }
 
     private func setTiling(_ enabled: Bool) {
+        if enabled && !tilingEnabled {
+            refreshLive(apply: false)
+            snapshotPreTileFrames()
+        } else if !enabled && tilingEnabled {
+            restorePreTileFrames()
+        }
         tilingEnabled = enabled
         if !verifyLaunch {
             UserDefaults.standard.set(enabled, forKey: defaultsKey)
@@ -91,10 +113,19 @@ final class WMAgent: NSObject {
     // MARK: - Tiling
 
     private func retile(apply: Bool) {
-        guard let frame = AppKitGlue.mainVisibleFrameAX()?.rect else {
+        guard refreshLive(apply: apply) else {
             refreshMenu()
             return
         }
+        refreshMenu()
+    }
+
+    /// Enumerate, admit, and reconcile. When `apply` is true and tiling is
+    /// allowed, write frames (with clamp re-solve). Returns false when the
+    /// primary visible frame cannot be read.
+    @discardableResult
+    private func refreshLive(apply: Bool) -> Bool {
+        guard let frame = AppKitGlue.mainVisibleFrameAX()?.rect else { return false }
         let listed = bridge.enumerateLiveWindows(ownPID: AppKitGlue.ownPID,
                                                  apps: AppKitGlue.runningApps(),
                                                  mainDisplayAX: frame)
@@ -105,27 +136,125 @@ final class WMAgent: NSObject {
             focusedWindowID = ids.first
         }
         tree = TilingLayout.reconcile(root: tree, windowIDs: ids, engine: engine)
-
         if apply, canTile {
-            applyFrames(in: frame)
+            applyFrames(in: frame, listed: listed, admittedIDs: Set(ids))
         }
-        refreshMenu()
+        return true
     }
 
-    private func applyFrames(in frame: Rect) {
+    private func applyFrames(in frame: Rect,
+                             listed: [AXWindowBridge.LiveWindow] = [],
+                             admittedIDs: Set<String> = []) {
         guard let subtree = TilingLayout.tilingSubtree(of: tree) else { return }
         observers.isApplying = true
         defer {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
                 self?.observers.isApplying = false
             }
         }
-        let rects = engine.rects(for: subtree, in: frame)
-        for (id, window) in live {
-            let panelID = TilingLayout.panelID(for: id)
-            guard let rect = rects[panelID], !rect.isEmpty else { continue }
-            _ = bridge.setFrame(rect, of: window.element)
+
+        let ids = TilingLayout.tiledWindowIDs(in: tree)
+        let requested = engine.rects(for: subtree, in: frame)
+        var actual: [String: Rect] = [:]
+
+        func write(_ rects: [String: Rect]) {
+            for id in ids {
+                let panelID = TilingLayout.panelID(for: id)
+                guard let rect = rects[panelID], !rect.isEmpty, let window = live[id] else { continue }
+                if let prev = actual[panelID], prev.almostEqual(rect, tolerance: 1) {
+                    continue
+                }
+                if let got = bridge.setFrame(rect, of: window.element) {
+                    actual[panelID] = got
+                }
+            }
         }
+
+        write(requested)
+        var resolved = requested
+        for _ in 0..<2 {
+            let next = ClampResolver.resolve(tree: subtree,
+                                             requested: requested,
+                                             actual: actual,
+                                             frame: frame,
+                                             gap: engine.gap)
+            let changed = ids.contains { id in
+                let panelID = TilingLayout.panelID(for: id)
+                switch (next[panelID], resolved[panelID]) {
+                case let (a?, b?): return !a.almostEqual(b, tolerance: 1)
+                case (nil, nil): return false
+                default: return true
+                }
+            }
+            resolved = next
+            if !changed { break }
+            write(resolved)
+        }
+        logApply(listed: listed, admittedIDs: admittedIDs.isEmpty ? Set(ids) : admittedIDs,
+                 requested: requested, actual: actual, resolved: resolved, frame: frame)
+    }
+
+    private func snapshotPreTileFrames() {
+        preTileFrames = Dictionary(uniqueKeysWithValues: live.map { ($0.key, $0.value.bounds) })
+        log.line("snapshot \(preTileFrames.count) window frames")
+    }
+
+    private func restorePreTileFrames() {
+        observers.isApplying = true
+        defer {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+                self?.observers.isApplying = false
+            }
+        }
+        _ = refreshLive(apply: false)
+        var restored = 0
+        var skipped = 0
+        for (id, original) in preTileFrames {
+            guard let window = live[id] else {
+                skipped += 1
+                continue
+            }
+            _ = bridge.setFrame(original, of: window.element)
+            restored += 1
+        }
+        log.line("restore frames restored=\(restored) closed=\(skipped)")
+        preTileFrames.removeAll()
+    }
+
+    private func logApply(listed: [AXWindowBridge.LiveWindow],
+                          admittedIDs: Set<String>,
+                          requested: [String: Rect],
+                          actual: [String: Rect],
+                          resolved: [String: Rect],
+                          frame: Rect) {
+        let rejections: [[String: String]] = listed.compactMap { window in
+            guard let reason = WindowAdmission.rejectionReason(window.snapshot, ownPID: AppKitGlue.ownPID) else {
+                return nil
+            }
+            return ["id": window.id, "owner": window.snapshot.ownerName,
+                    "role": window.snapshot.role, "subrole": window.snapshot.subrole,
+                    "reason": reason]
+        }
+        func dict(_ rects: [String: Rect]) -> [String: [String: Double]] {
+            var out: [String: [String: Double]] = [:]
+            for (id, r) in rects {
+                out[id] = ["x": r.x, "y": r.y, "w": r.w, "h": r.h]
+            }
+            return out
+        }
+        let payload: [String: Any] = [
+            "timestamp": ISO8601DateFormatter().string(from: Date()),
+            "frame": ["x": frame.x, "y": frame.y, "w": frame.w, "h": frame.h],
+            "listedCount": listed.count,
+            "admittedCount": admittedIDs.count,
+            "movedCount": actual.count,
+            "rejections": rejections,
+            "requested": dict(requested),
+            "actual": dict(actual),
+            "resolved": dict(resolved),
+        ]
+        log.writeJSON(payload, name: "trellis-wm-last-apply.json")
+        log.line("apply listed=\(listed.count) admitted=\(admittedIDs.count) moved=\(actual.count) rejected=\(rejections.count)")
     }
 
     private func refreshMenu() {
@@ -166,11 +295,16 @@ final class WMAgent: NSObject {
         if let focusedWindowID, TilingLayout.tiledWindowIDs(in: tree).contains(focusedWindowID) {
             return focusedWindowID
         }
-        // Fall back to the frontmost app's first managed window, then first tile.
+        // Fall back to the frontmost app's first managed window in tree
+        // order (Dictionary iteration is not a stable focus order), then the
+        // first tile.
         let frontPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
-        if let frontPID, let match = live.values.first(where: { $0.snapshot.pid == frontPID }) {
-            focusedWindowID = match.id
-            return match.id
+        if let frontPID {
+            let ordered = TilingLayout.tiledWindowIDs(in: tree)
+            if let match = ordered.first(where: { live[$0]?.snapshot.pid == frontPID }) {
+                focusedWindowID = match
+                return match
+            }
         }
         let first = TilingLayout.tiledWindowIDs(in: tree).first
         focusedWindowID = first
@@ -214,6 +348,7 @@ final class WMAgent: NSObject {
     // MARK: - Launch report
 
     private func writeLaunchReport() {
+        let hotkeys = HotkeyCenter.shared.lastReport
         let payload: [String: Any] = [
             "timestamp": ISO8601DateFormatter().string(from: Date()),
             "trusted": bridge.isTrusted,
@@ -223,6 +358,8 @@ final class WMAgent: NSObject {
             "verifyLaunch": verifyLaunch,
             "managedCount": TilingLayout.tiledWindowIDs(in: tree).count,
             "canTile": canTile,
+            "hotkeysRegistered": hotkeys.registered,
+            "hotkeyFailures": hotkeys.failures,
         ]
         log.writeJSON(payload, name: "launch-verify.json")
     }

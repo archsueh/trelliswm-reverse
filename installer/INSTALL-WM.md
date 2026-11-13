@@ -31,7 +31,7 @@ xattr -d com.apple.quarantine "/Applications/Trellis WM.app"
 2. 打开「Trellis WM」。菜单栏会出现一个三分栏图标（或文字 `WM`）。
 3. 点菜单里的 **Grant Accessibility…**，在「系统设置 → 隐私与安全性 → 辅助功能」中勾选 **Trellis WM**。首次授权后可能需要再开一次 app。
 4. 在未授权之前，本 app **不会移动任何窗口**。默认平铺是关闭的。
-5. 授权后，点 **Enable Tiling**，或按 `⌃⌥⌘T`。当前主屏上的普通标准窗口会被排进带 12pt 间隙的平铺布局（避开菜单栏和 Dock）。
+5. 授权后，点 **Enable Tiling**，或按 `⌃⌥⌘T`。当前主屏上的普通标准窗口会被排进带 12pt 间隙的平铺布局（避开菜单栏和 Dock）。关闭平铺（菜单或再按一次同一快捷键）会把窗口放回开启前的位置；退出 app 时同样会还原。期间关掉的窗口会被跳过。若某个 app 有最小宽度（例如访达、微信）导致格子被钳制，相邻窗口会让出空间并保持 12pt 间隙，而不是互相重叠；若最小尺寸加间隙已经超出可见区域，窗口从左边起依次排开，允许伸出右缘，仍不重叠。
 
 卸载：把 `/Applications/Trellis WM.app` 拖到废纸篓。偏好只写了 `tilingEnabled` 这一项，可用 `defaults delete app.trellisreverse.wm` 清掉。
 

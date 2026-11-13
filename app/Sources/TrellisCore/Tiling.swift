@@ -62,14 +62,25 @@ public enum WindowAdmission: Sendable {
         "app.trellisui.trelliswm",
     ]
 
+    /// Why `admits` would reject this window, or `nil` if it would be kept.
+    /// Used for diagnostics (managed-count vs AX-window-count mismatches).
+    public static func rejectionReason(_ window: WindowSnapshot, ownPID: Int32) -> String? {
+        if window.pid == ownPID { return "own-pid" }
+        if window.pid == 0 { return "zero-pid" }
+        if !window.bundleID.isEmpty, skippedBundleIDs.contains(window.bundleID) {
+            return "skipped-bundle:\(window.bundleID)"
+        }
+        if window.activationPolicy != .regular { return "policy:\(window.activationPolicy.rawValue)" }
+        if window.role != windowRole { return "role:\(window.role)" }
+        if window.subrole != standardSubrole { return "subrole:\(window.subrole)" }
+        if window.isMinimized { return "minimized" }
+        if window.isFullscreen { return "fullscreen" }
+        if !window.isOnMainDisplay { return "off-main" }
+        return nil
+    }
+
     public static func admits(_ window: WindowSnapshot, ownPID: Int32) -> Bool {
-        guard window.pid != ownPID, window.pid != 0 else { return false }
-        if !window.bundleID.isEmpty, skippedBundleIDs.contains(window.bundleID) { return false }
-        guard window.activationPolicy == .regular else { return false }
-        guard window.role == windowRole, window.subrole == standardSubrole else { return false }
-        guard !window.isMinimized, !window.isFullscreen else { return false }
-        guard window.isOnMainDisplay else { return false }
-        return true
+        rejectionReason(window, ownPID: ownPID) == nil
     }
 
     public static func admitted(_ windows: [WindowSnapshot], ownPID: Int32) -> [WindowSnapshot] {

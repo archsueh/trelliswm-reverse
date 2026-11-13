@@ -180,4 +180,41 @@ final class TilingTests: XCTestCase {
         XCTAssertTrue(ax.contains(x: ax.midX, y: ax.midY))
         XCTAssertFalse(ax.intersects(Rect(x: 900, y: 0, w: 10, h: 10)))
     }
+
+    func testAdmissionRejectionReasons() {
+        let ownPID: Int32 = 99
+        XCTAssertNil(WindowAdmission.rejectionReason(snapshot("ok"), ownPID: ownPID))
+        XCTAssertEqual(WindowAdmission.rejectionReason(snapshot("a", minimized: true), ownPID: ownPID), "minimized")
+        XCTAssertEqual(WindowAdmission.rejectionReason(snapshot("b", fullscreen: true), ownPID: ownPID), "fullscreen")
+        XCTAssertEqual(WindowAdmission.rejectionReason(snapshot("c", pid: ownPID), ownPID: ownPID), "own-pid")
+        XCTAssertEqual(WindowAdmission.rejectionReason(snapshot("d", pid: 0), ownPID: ownPID), "zero-pid")
+        XCTAssertEqual(WindowAdmission.rejectionReason(snapshot("e", policy: .accessory), ownPID: ownPID), "policy:accessory")
+        XCTAssertEqual(WindowAdmission.rejectionReason(snapshot("g", subrole: "AXDialog"), ownPID: ownPID), "subrole:AXDialog")
+        XCTAssertEqual(WindowAdmission.rejectionReason(snapshot("i", main: false), ownPID: ownPID), "off-main")
+        XCTAssertEqual(WindowAdmission.rejectionReason(snapshot("j", bundle: "app.trellisui.trelliswm", pid: 8), ownPID: ownPID),
+                       "skipped-bundle:app.trellisui.trelliswm")
+    }
+
+    func testPrimaryMaxYUsesOriginZeroScreenNotTallestOrFirst() {
+        let primary = Rect(x: 0, y: 0, w: 2056, h: 1329)
+        let side = Rect(x: 2056, y: 0, w: 1920, h: 1080)
+        XCTAssertEqual(Rect.primaryMaxY(cocoaScreens: [primary, side]), 1329)
+        // Secondary listed first, or taller than the primary, must not win.
+        XCTAssertEqual(Rect.primaryMaxY(cocoaScreens: [side, primary]), 1329)
+        let tallerSide = Rect(x: 2056, y: -200, w: 1512, h: 1800)
+        XCTAssertEqual(Rect.primaryMaxY(cocoaScreens: [tallerSide, primary]), 1329)
+
+        // Flip every screen against the primary top, not against its own maxY.
+        let sideAX = Rect.fromCocoa(x: side.x, y: side.y, w: side.w, h: side.h, primaryMaxY: 1329)
+        XCTAssertEqual(sideAX.y, 1329 - 1080, accuracy: 1e-9)
+        XCTAssertEqual(sideAX.x, 2056, accuracy: 1e-9)
+        let primaryAX = Rect.fromCocoa(x: 0, y: 0, w: 2056, h: 1329, primaryMaxY: 1329)
+        XCTAssertEqual(primaryAX.y, 0, accuracy: 1e-9)
+        // Using the secondary's own maxY would mis-place the primary into negative AX y.
+        let wrongPrimary = Rect.fromCocoa(x: 0, y: 0, w: 2056, h: 1329, primaryMaxY: 1080)
+        XCTAssertEqual(wrongPrimary.y, 1080 - 1329, accuracy: 1e-9)
+        XCTAssertNotEqual(wrongPrimary.y, 0, accuracy: 1e-9)
+
+        XCTAssertNil(Rect.primaryMaxY(cocoaScreens: []))
+    }
 }
